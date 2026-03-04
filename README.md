@@ -1,3 +1,39 @@
+# Amplified Advisors — Growth OS
+
+Step-locked web app for financial advisors: firm setup → AI ICP discovery → offer selection → iterative AI asset generation (ads, funnel copy, sequences, call prep) → compliance → deployment package.
+
+**Tech stack:** Next.js, Vercel, PostgreSQL, Prisma, OpenAI (server-side for all AI generation). No auth for speed MVP.
+
+## Database (PostgreSQL + Prisma)
+
+1. **PostgreSQL** — Use a local instance or a hosted provider (e.g. [Neon](https://neon.tech), [Vercel Postgres](https://vercel.com/storage/postgres), [Railway](https://railway.app), or local Docker).
+2. **Connection string** — Format: `postgresql://USER:PASSWORD@HOST:5432/DATABASE_NAME`
+3. **Env:** Copy `.env.example` to `.env.local` and set:
+   - `DATABASE_URL` = your PostgreSQL connection string.
+4. **Apply schema:** From the project root run:
+   - `npm run db:generate` — generate Prisma client
+   - `npm run db:push` — push schema to the DB (no migrations yet), or `npm run db:migrate` for migrations.
+5. **Test the DB:** Run `npm run test:db` (checks connection using `.env.local`). Or start the dev server and open [http://localhost:3000/api/health/db](http://localhost:3000/api/health/db) — you should see `{"ok":true,"database":"connected"}`.
+
+(`.env.local` is gitignored; never commit real credentials.)
+
+## OpenAI (AI generation)
+
+Used for: website analysis, ICP generation, ad/funnel/sequence/call-prep asset generation. All calls run **server-side** (API routes or Server Components) so the key never hits the client.
+
+1. **Get a key:** [platform.openai.com/api-keys](https://platform.openai.com/api-keys) → Create new secret key.
+2. **Add to `.env.local`:**
+   - `OPENAI_API_KEY` = `sk-...` (no `NEXT_PUBLIC_` — keep it server-only).
+
+**Docs:**
+
+- **[Build plan & milestones](docs/BUILD_PLAN.md)** — What we're building and in what order (single execution view).
+- **[Design (UI)](docs/DESIGN.md)** — Monochromatic, Apple-inspired, simplistic style; palette, typography, components.
+- [Feature Specification](Amplified_OS_Feature_Specification.docx.md) — Product features and acceptance criteria.
+- [MVP Build Specification](Amplified_OS_MVP_Build_Specification.docx.md) — Phases, data model, tech stack, prompt architecture.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
