@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useTheme } from "@/components/ThemeProvider";
 
 const apps = [
   {
-    name: "Amplify",
+    name: "Amplify OS",
     description: "Growth OS for financial advisors",
-    href: "/onboarding/firm-profile",
+    href: "/amplify-os/firm-profile",
   },
   {
     name: "Amplify Chat",
@@ -17,22 +17,7 @@ const apps = [
 ];
 
 export default function Home() {
-  const [dark, setDark] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("theme");
-    if (stored === "dark" || (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
-      setDark(true);
-      document.documentElement.classList.add("dark");
-    }
-  }, []);
-
-  function toggleTheme() {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("theme", next ? "dark" : "light");
-  }
+  const { dark, toggleTheme } = useTheme();
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-6">
