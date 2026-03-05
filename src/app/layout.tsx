@@ -12,8 +12,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Amplified Growth OS',
-  description: 'Step-locked campaign workflow and AI asset generation for financial advisors.',
+  title: 'Amplify Advisors App Hub',
+  description: 'Application hub for Amplify Advisors.',
 };
 
 export default function RootLayout({
