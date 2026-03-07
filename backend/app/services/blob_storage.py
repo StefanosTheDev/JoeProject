@@ -28,7 +28,7 @@ def upload_pdf(pdf_bytes: bytes, doc_name: str, doc_id: str) -> str:
     if not os.environ.get("BLOB_READ_WRITE_TOKEN", "").strip():
         raise ValueError("BLOB_READ_WRITE_TOKEN environment variable not set")
     pathname = _safe_pathname(doc_name, doc_id)
-    resp = vercel_blob.put(pathname, pdf_bytes)
+    resp = vercel_blob.put(pathname, pdf_bytes, options={"allowOverwrite": True})
     url = resp["url"]
     logger.info("Uploaded PDF to Vercel Blob: %s (%d bytes)", url, len(pdf_bytes))
     return url
