@@ -1,72 +1,86 @@
-# Amplified Advisors — Growth OS
+# Amplify Advisors App Hub
 
-Step-locked web app for financial advisors: firm setup → AI ICP discovery → offer selection → iterative AI asset generation (ads, funnel copy, sequences, call prep) → compliance → deployment package.
+Monorepo with a **FastAPI** backend and **React + Vite** frontend.
 
-**Tech stack:** Next.js, Vercel, PostgreSQL, Prisma, OpenAI (server-side for all AI generation). No auth for speed MVP.
+## Project Structure
 
-## Database (PostgreSQL + Prisma)
-
-1. **PostgreSQL** — Use a local instance or a hosted provider (e.g. [Neon](https://neon.tech), [Vercel Postgres](https://vercel.com/storage/postgres), [Railway](https://railway.app), or local Docker).
-2. **Connection string** — Format: `postgresql://USER:PASSWORD@HOST:5432/DATABASE_NAME`
-3. **Env:** Copy `.env.example` to `.env.local` and set:
-   - `DATABASE_URL` = your PostgreSQL connection string.
-4. **Apply schema:** From the project root run:
-   - `npm run db:generate` — generate Prisma client
-   - `npm run db:push` — push schema to the DB (no migrations yet), or `npm run db:migrate` for migrations.
-5. **Test the DB:** Run `npm run test:db` (checks connection using `.env.local`). Or start the dev server and open [http://localhost:3000/api/health/db](http://localhost:3000/api/health/db) — you should see `{"ok":true,"database":"connected"}`.
-
-(`.env.local` is gitignored; never commit real credentials.)
-
-## OpenAI (AI generation)
-
-Used for: website analysis, ICP generation, ad/funnel/sequence/call-prep asset generation. All calls run **server-side** (API routes or Server Components) so the key never hits the client.
-
-1. **Get a key:** [platform.openai.com/api-keys](https://platform.openai.com/api-keys) → Create new secret key.
-2. **Add to `.env.local`:**
-   - `OPENAI_API_KEY` = `sk-...` (no `NEXT_PUBLIC_` — keep it server-only).
-
-**Docs:**
-
-- **[Build plan & milestones](docs/BUILD_PLAN.md)** — What we're building and in what order (single execution view).
-- **[Design (UI)](docs/DESIGN.md)** — Monochromatic, Apple-inspired, simplistic style; palette, typography, components.
-- [Feature Specification](Amplified_OS_Feature_Specification.docx.md) — Product features and acceptance criteria.
-- [MVP Build Specification](Amplified_OS_MVP_Build_Specification.docx.md) — Phases, data model, tech stack, prompt architecture.
-
----
-
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+```
+JoeProject/
+├── backend/          # Python FastAPI
+│   ├── app/
+│   │   ├── main.py           # FastAPI app, CORS, lifespan
+│   │   ├── config.py         # Settings (env vars)
+│   │   ├── db.py             # asyncpg pool + pgvector
+│   │   ├── routers/
+│   │   │   ├── health.py     # GET /api/health/db
+│   │   │   └── chat.py       # POST /api/chat (Claude streaming)
+│   │   └── sql/
+│   │       └── schema.sql    # PostgreSQL DDL
+│   ├── requirements.txt
+│   └── .env
+├── frontend/         # Vite + React + TypeScript
+│   ├── src/
+│   │   ├── main.tsx
+│   │   ├── App.tsx           # React Router setup
+│   │   ├── index.css         # Tailwind v4 + design tokens
+│   │   ├── components/       # ThemeProvider
+│   │   └── pages/
+│   │       ├── AppHub.tsx
+│   │       ├── amplify-os/   # Amplify OS wizard pages
+│   │       └── amplify-chat/ # Amplify Chat (ChatGPT-like UI)
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── tsconfig.json
+└── README.md
+```
 
 ## Getting Started
 
-First, run the development server:
+### Backend
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Frontend
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The Vite dev server proxies `/api/*` requests to `http://localhost:8000`.
 
-## Learn More
+### Database
 
-To learn more about Next.js, take a look at the following resources:
+**Local**: `psql -d amplified_os -f backend/app/sql/schema.sql`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Production (Supabase)**: See [Deploying to Vercel + Supabase](docs/DEPLOY_VERCEL_SUPABASE.md) for pgvector and env setup.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Environment Variables
 
-## Deploy on Vercel
+### Backend (`backend/.env`)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string (Supabase direct: port 5432) |
+| `ANTHROPIC_API_KEY` | Anthropic API key for Claude |
+| `CORS_ORIGINS` | Comma-separated allowed origins (include Vercel URL in prod) |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Frontend (production on Vercel)
+
+| Variable | Description |
+|---|---|
+| `VITE_API_URL` | Backend base URL (e.g. `https://your-api.railway.app`) so chat calls the deployed API |
+
+## Tech Stack
+
+- **Backend**: FastAPI, asyncpg, pgvector, Anthropic Python SDK
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS v4, React Router v7
+- **Chat**: Vercel AI SDK (`@ai-sdk/react`) with UI Message Stream Protocol
+- **Database**: PostgreSQL with pgvector extension
