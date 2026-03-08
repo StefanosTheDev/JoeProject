@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import ThemeProvider from "@/components/ThemeProvider";
 import App from "./App";
 import "./index.css";
+import "./styles/shadcn-theme.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
