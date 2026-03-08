@@ -5,7 +5,15 @@ node_modules/
 __pycache__/
 *.pyc
 backend/venv/
+backend/.venv/
 *.egg-info/
+
+# Tests (pytest cache, coverage, test code)
+backend/tests/
+.pytest_cache/
+.coverage
+htmlcov/
+.coverage.*
 
 # build output
 dist/

@@ -2,7 +2,7 @@
 ElevenLabs API — voice cloning and TTS preview.
 
 Docs: https://elevenlabs.io/docs/api-reference
-Auth: xi-api-key header. Used for one-time voice clone; HeyGen uses voice_id for TTS.
+Auth: xi-api-key header.
 """
 from __future__ import annotations
 
