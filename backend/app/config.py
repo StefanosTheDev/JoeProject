@@ -58,10 +58,64 @@ class Settings:
     db_pool_max_size: int = field(
         default_factory=lambda: int(os.environ.get("DB_POOL_MAX_SIZE", "10"))
     )
+    # Meta (Facebook) Marketing API — OAuth and Insights
+    meta_app_id: str = field(
+        default_factory=lambda: os.environ.get("META_APP_ID", "").strip()
+    )
+    meta_app_secret: str = field(
+        default_factory=lambda: os.environ.get("META_APP_SECRET", "").strip()
+    )
+    meta_redirect_uri: str = field(
+        default_factory=lambda: os.environ.get("META_REDIRECT_URI", "").strip()
+    )
+    meta_api_version: str = field(
+        default_factory=lambda: os.environ.get("META_API_VERSION", "v21.0").strip()
+    )
+    # Optional: if set, Meta insights sync endpoint may require this header (cron)
+    meta_cron_secret: str = field(
+        default_factory=lambda: os.environ.get("META_CRON_SECRET", "").strip()
+    )
+    # HeyGen API (video generation, avatars, video agent) — Direct API uses API Key
+    heygen_api_key: str = field(
+        default_factory=lambda: os.environ.get("HEYGEN_API_KEY", "").strip()
+    )
+    # ElevenLabs API (voice cloning, TTS) — header xi-api-key; used for voice clone, HeyGen uses voice_id
+    elevenlabs_api_key: str = field(
+        default_factory=lambda: os.environ.get("ELEVENLABS_API_KEY", "").strip()
+    )
+    # GoHighLevel (GHL) — OAuth 2.0, Base URL https://services.leadconnectorhq.com
+    ghl_client_id: str = field(
+        default_factory=lambda: os.environ.get("GHL_CLIENT_ID", "").strip()
+    )
+    ghl_client_secret: str = field(
+        default_factory=lambda: os.environ.get("GHL_CLIENT_SECRET", "").strip()
+    )
+    ghl_redirect_uri: str = field(
+        default_factory=lambda: os.environ.get("GHL_REDIRECT_URI", "").strip()
+    )
+    # Optional: required for DRAFT apps. Copy from Marketplace Auth → Install Link (Show) URL (version_id=...)
+    ghl_version_id: str = field(
+        default_factory=lambda: os.environ.get("GHL_VERSION_ID", "").strip()
+    )
+    # Optional: use Whitelabel install host (marketplace.leadconnectorhq.com). Default False = Standard (marketplace.gohighlevel.com)
+    ghl_whitelabel_install: bool = field(
+        default_factory=lambda: os.environ.get("GHL_WHITELABEL_INSTALL", "").strip().lower() in ("1", "true", "yes")
+    )
+    # Optional: GHL webhook signing secret (HMAC SHA256). If set, POST /api/connect/webhooks verifies X-HighLevel-Signature.
+    ghl_webhook_signing_secret: str = field(
+        default_factory=lambda: os.environ.get("GHL_WEBHOOK_SIGNING_SECRET", "").strip()
+    )
 
     @property
     def google_service_account_path(self) -> Path:
         return BACKEND_DIR / self.google_service_account_file
+
+    @property
+    def frontend_origin(self) -> str:
+        """Base URL for OAuth redirects (first CORS origin or localhost)."""
+        if self.cors_origins:
+            return self.cors_origins[0].strip()
+        return "http://localhost:5173"
 
 
 settings = Settings()
