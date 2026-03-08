@@ -4,7 +4,7 @@
 
 **GoHighLevel Integration**
 
-Developer Guide — API Reference, Custom Values Strategy & Build Plan
+Developer Guide — API Reference, Custom Values Strategy & Build Plan dsfsd
 
 **Scope:** Complete integration guide for connecting the Growth OS to GoHighLevel. Covers the Custom Values content injection strategy, Contacts/Calendar/Pipeline sync, Webhooks for real-time events, Snapshot deployment automation, and MCP server for AI agent operations.
 
