@@ -12,6 +12,11 @@ const apps = [
     description: "Internal AI Agent",
     href: "/amplify-chat",
   },
+  {
+    name: "Experience HeyGen & ElevenLabs",
+    description: "Test video and voice integration",
+    href: "/experience-heygen-elevenlabs",
+  },
 ];
 
 export default function AppHub() {
