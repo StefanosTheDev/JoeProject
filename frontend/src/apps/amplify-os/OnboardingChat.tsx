@@ -619,6 +619,9 @@ export default function OnboardingChat() {
   const [prefillVal, setPrefillVal] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [genStep, setGenStep] = useState(0);
+  const [genProgress, setGenProgress] = useState(0);
+  const [genFadeOut, setGenFadeOut] = useState(false);
   const [showUploadZone, setShowUploadZone] = useState(false);
   const [voiceActive, setVoiceActive] = useState(false);
   const [editingMsgIdx, setEditingMsgIdx] = useState<number | null>(null);
@@ -746,7 +749,51 @@ export default function OnboardingChat() {
     if (step?.type === "upload") setShowUploadZone(true);
     if (step?.type === "complete") {
       setGenerating(true);
-      setTimeout(() => setGenerating(false), 3000);
+      setGenStep(0);
+      setGenProgress(0);
+      setGenFadeOut(false);
+
+      const GEN_STEPS = [
+        { at: 0 },    // step 0
+        { at: 12 },   // step 1 at 12%
+        { at: 28 },   // step 2
+        { at: 44 },   // step 3
+        { at: 58 },   // step 4
+        { at: 72 },   // step 5
+        { at: 85 },   // step 6
+        { at: 95 },   // step 7
+      ];
+
+      let progress = 0;
+      const totalDuration = 8000; // 8 seconds total
+      const tickMs = 60;
+      const increment = 100 / (totalDuration / tickMs);
+
+      const iv = setInterval(() => {
+        progress += increment;
+        if (progress >= 100) {
+          progress = 100;
+          clearInterval(iv);
+          setGenProgress(100);
+          setGenStep(GEN_STEPS.length - 1);
+          // fade out then navigate
+          setTimeout(() => {
+            setGenFadeOut(true);
+            setTimeout(() => navigate("/amplify-os/blueprint"), 600);
+          }, 800);
+          return;
+        }
+        setGenProgress(Math.round(progress));
+        // advance step based on progress thresholds
+        for (let i = GEN_STEPS.length - 1; i >= 0; i--) {
+          if (progress >= GEN_STEPS[i].at) {
+            setGenStep(i);
+            break;
+          }
+        }
+      }, tickMs);
+
+      return () => clearInterval(iv);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
@@ -941,6 +988,13 @@ export default function OnboardingChat() {
             </div>
             <span className="obc-progress-label">{progress}%</span>
           </div>
+          <button
+            className="obc-dev-skip"
+            onClick={() => setCurrentStep(STEPS.length - 1)}
+            title="Dev mode: skip onboarding with dummy data"
+          >
+            Skip to Blueprint
+          </button>
         </header>
 
         {/* Messages */}
@@ -1021,17 +1075,64 @@ export default function OnboardingChat() {
             )}
 
             {step?.type === "complete" && generating && (
-              <div className="obc-generating">
-                <div className="obc-spinner" />
-                <p>Building your Marketing Blueprint\u2026</p>
-              </div>
-            )}
-            {step?.type === "complete" && !generating && (
-              <div className="obc-complete-action">
-                <button onClick={() => navigate("/amplify-os/blueprint")} className="obc-btn obc-btn--primary obc-btn--lg">
-                  View Your Blueprint
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                </button>
+              <div className={`obc-gen-screen ${genFadeOut ? "obc-gen-screen--fadeout" : ""}`}>
+                {/* Animated grid background */}
+                <div className="obc-gen-grid">
+                  {Array.from({ length: 48 }).map((_, i) => (
+                    <div key={i} className="obc-gen-grid-cell" style={{ animationDelay: `${(i * 0.12) % 3}s` }} />
+                  ))}
+                </div>
+
+                <div className="obc-gen-content">
+                  {/* Pulsing orb */}
+                  <div className="obc-gen-orb">
+                    <div className="obc-gen-orb-ring obc-gen-orb-ring--1" />
+                    <div className="obc-gen-orb-ring obc-gen-orb-ring--2" />
+                    <div className="obc-gen-orb-ring obc-gen-orb-ring--3" />
+                    <div className="obc-gen-orb-core" />
+                  </div>
+
+                  {/* Status text */}
+                  <div className="obc-gen-status">
+                    {[
+                      "Initializing analysis engine",
+                      "Processing your business profile",
+                      "Mapping competitive landscape",
+                      "Analyzing target audience segments",
+                      "Identifying content opportunities",
+                      "Building channel strategy",
+                      "Generating personalized blueprint",
+                      "Finalizing your marketing plan",
+                    ].map((label, i) => (
+                      <p key={i} className={`obc-gen-step ${genStep === i ? "obc-gen-step--active" : ""} ${genStep > i ? "obc-gen-step--done" : ""}`}>
+                        <span className="obc-gen-step-indicator">
+                          {genStep > i ? (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                          ) : genStep === i ? (
+                            <span className="obc-gen-step-dot" />
+                          ) : (
+                            <span className="obc-gen-step-dot obc-gen-step-dot--idle" />
+                          )}
+                        </span>
+                        {label}
+                      </p>
+                    ))}
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="obc-gen-progress-track">
+                    <div className="obc-gen-progress-fill" style={{ width: `${genProgress}%` }} />
+                  </div>
+                  <p className="obc-gen-percent">{genProgress}%</p>
+
+                  {/* Data points ticker */}
+                  <div className="obc-gen-ticker">
+                    {genStep >= 1 && <span className="obc-gen-ticker-item">12 data points extracted</span>}
+                    {genStep >= 3 && <span className="obc-gen-ticker-item">4 audience segments identified</span>}
+                    {genStep >= 5 && <span className="obc-gen-ticker-item">6 channels optimized</span>}
+                    {genStep >= 7 && <span className="obc-gen-ticker-item">Blueprint ready</span>}
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -1471,6 +1572,22 @@ export default function OnboardingChat() {
           min-width: 28px;
           text-align: right;
         }
+        .obc-dev-skip {
+          padding: 6px 14px;
+          border-radius: 6px;
+          border: 1px dashed #555;
+          background: transparent;
+          color: #888;
+          font-size: 11px;
+          cursor: pointer;
+          transition: all 0.15s;
+          flex-shrink: 0;
+          margin-left: 12px;
+        }
+        .obc-dev-skip:hover {
+          border-color: #888;
+          color: #ededed;
+        }
 
         /* ── Messages ── */
         .obc-messages {
@@ -1688,30 +1805,198 @@ export default function OnboardingChat() {
         .obc-dots span:nth-child(2) { animation-delay: 0.2s; }
         .obc-dots span:nth-child(3) { animation-delay: 0.4s; }
 
-        /* ── Generating / Complete ── */
-        .obc-generating {
+        /* ── Blueprint Generation Screen ── */
+        .obc-gen-screen {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 480px;
+          overflow: hidden;
+          animation: obc-gen-fadein 0.6s ease;
+          transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .obc-gen-screen--fadeout {
+          opacity: 0;
+          transform: scale(1.02);
+        }
+        @keyframes obc-gen-fadein {
+          from { opacity: 0; transform: scale(0.97); }
+          to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Grid background */
+        .obc-gen-grid {
+          position: absolute;
+          inset: 0;
+          display: grid;
+          grid-template-columns: repeat(8, 1fr);
+          grid-template-rows: repeat(6, 1fr);
+          gap: 1px;
+          opacity: 0.15;
+        }
+        .obc-gen-grid-cell {
+          background: #1f1f1f;
+          animation: obc-gen-cell-pulse 3s ease-in-out infinite;
+        }
+        @keyframes obc-gen-cell-pulse {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 1; }
+        }
+
+        /* Content layer */
+        .obc-gen-content {
+          position: relative;
+          z-index: 1;
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding: 40px;
-          gap: 16px;
+          gap: 28px;
+          padding: 40px 24px;
+          max-width: 400px;
+          width: 100%;
         }
-        .obc-generating p {
-          font-size: 14px;
-          color: #666;
+
+        /* Pulsing orb */
+        .obc-gen-orb {
+          position: relative;
+          width: 72px;
+          height: 72px;
         }
-        .obc-spinner {
-          width: 32px;
-          height: 32px;
-          border: 2px solid #2e2e2e;
-          border-top-color: #ededed;
+        .obc-gen-orb-core {
+          position: absolute;
+          inset: 22px;
           border-radius: 50%;
-          animation: spin 0.8s linear infinite;
+          background: #ededed;
+          animation: obc-gen-core-pulse 2s ease-in-out infinite;
         }
-        .obc-complete-action {
+        @keyframes obc-gen-core-pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(0.85); opacity: 0.7; }
+        }
+        .obc-gen-orb-ring {
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          border: 1px solid rgba(237, 237, 237, 0.2);
+        }
+        .obc-gen-orb-ring--1 {
+          animation: obc-gen-ring-spin 4s linear infinite;
+          border-top-color: rgba(237, 237, 237, 0.6);
+        }
+        .obc-gen-orb-ring--2 {
+          inset: -8px;
+          animation: obc-gen-ring-spin 6s linear infinite reverse;
+          border-right-color: rgba(237, 237, 237, 0.4);
+        }
+        .obc-gen-orb-ring--3 {
+          inset: -16px;
+          animation: obc-gen-ring-spin 8s linear infinite;
+          border-bottom-color: rgba(237, 237, 237, 0.2);
+        }
+        @keyframes obc-gen-ring-spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        /* Status steps */
+        .obc-gen-status {
           display: flex;
+          flex-direction: column;
+          gap: 6px;
+          width: 100%;
+        }
+        .obc-gen-step {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 13px;
+          color: #333;
+          transition: all 0.4s ease;
+          height: 0;
+          overflow: hidden;
+          opacity: 0;
+          margin: 0;
+        }
+        .obc-gen-step--active {
+          color: #ededed;
+          height: 24px;
+          opacity: 1;
+        }
+        .obc-gen-step--done {
+          color: #555;
+          height: 22px;
+          opacity: 1;
+          font-size: 12px;
+        }
+        .obc-gen-step-indicator {
+          display: flex;
+          align-items: center;
           justify-content: center;
-          padding: 40px;
+          width: 16px;
+          height: 16px;
+          flex-shrink: 0;
+        }
+        .obc-gen-step-indicator svg {
+          color: #555;
+        }
+        .obc-gen-step-dot {
+          display: block;
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #ededed;
+          animation: obc-gen-dot-pulse 1s ease-in-out infinite;
+        }
+        .obc-gen-step-dot--idle {
+          background: #333;
+          animation: none;
+        }
+        @keyframes obc-gen-dot-pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.4); opacity: 0.6; }
+        }
+
+        /* Progress bar */
+        .obc-gen-progress-track {
+          width: 100%;
+          height: 3px;
+          background: #1f1f1f;
+          border-radius: 2px;
+          overflow: hidden;
+        }
+        .obc-gen-progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #555, #ededed);
+          border-radius: 2px;
+          transition: width 0.15s linear;
+        }
+        .obc-gen-percent {
+          font-size: 12px;
+          color: #555;
+          font-variant-numeric: tabular-nums;
+          margin: -16px 0 0;
+        }
+
+        /* Ticker */
+        .obc-gen-ticker {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          justify-content: center;
+        }
+        .obc-gen-ticker-item {
+          font-size: 11px;
+          color: #444;
+          background: #141414;
+          border: 1px solid #1f1f1f;
+          border-radius: 4px;
+          padding: 4px 10px;
+          animation: obc-gen-ticker-in 0.4s ease;
+        }
+        @keyframes obc-gen-ticker-in {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
         }
 
         /* ── Input area ── */

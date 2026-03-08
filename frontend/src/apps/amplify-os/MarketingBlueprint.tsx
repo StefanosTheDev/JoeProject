@@ -1030,7 +1030,23 @@ export default function MarketingBlueprint(): React.JSX.Element {
           from { opacity: 0; transform: translateY(6px); }
           to { opacity: 1; transform: translateY(0); }
         }
+
+        /* ── Page entrance ── */
+        .bp-page-enter .bp-header {
+          animation: bp-section-appear 1.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation-delay: 0.3s;
+        }
+        .bp-page-enter .bp-layout {
+          animation: bp-section-appear 1.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation-delay: 0.6s;
+        }
+        @keyframes bp-section-appear {
+          from { opacity: 0; transform: translateY(24px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
+
+      <div className="bp-page-enter">
 
       {/* Header */}
       <header className="bp-header">
@@ -1610,6 +1626,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
         </div>
       </aside>
       </div>
+      </div>{/* close reveal wrapper */}
     </div>
   );
 }
