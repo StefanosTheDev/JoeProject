@@ -71,8 +71,16 @@ type StepType =
   | "single_choice"
   | "range"
   | "slider"
+  | "currency"
+  | "percent"
   | "upload"
   | "complete";
+
+/** Condition: step is shown only when a previous multi/single choice step includes a given option */
+interface StepCondition {
+  stepId: string;
+  hasOption: string;
+}
 
 interface Step {
   id: string;
@@ -89,6 +97,7 @@ interface Step {
   sliderSteps?: number;
   sliderTiers?: { max: number; label: string; color: string; description: string }[];
   context: ContextInfo;
+  condition?: StepCondition;
 }
 
 interface Message {
@@ -217,13 +226,15 @@ const STEPS: Step[] = [
       { id: "business", label: "Business Planning", desc: "Succession, exit planning, 401(k)" },
       { id: "equity_comp", label: "Equity Compensation", desc: "RSUs, stock options, ISOs, ESPPs" },
       { id: "high_income", label: "High-Income Strategies", desc: "Deferred comp, backdoor Roth, tax-loss harvesting" },
+      { id: "annuities", label: "Annuities", desc: "Fixed, indexed, or variable annuities" },
+      { id: "financial_plans", label: "Financial Plans", desc: "Comprehensive or modular financial plans" },
       { id: "other", label: "Other" },
     ],
     context: { title: "Services", body: "Your service mix determines the content topics, ad angles, and funnel offers the system generates." },
   },
   {
     id: "comp_model",
-    ai: "How do you primarily charge clients?",
+    ai: "How do you charge clients? Select all that apply.",
     type: "multi_choice",
     options: [
       { id: "aum", label: "AUM-Based Fees", desc: "% of assets under management" },
@@ -231,9 +242,82 @@ const STEPS: Step[] = [
       { id: "hourly", label: "Hourly", desc: "Billed by the hour" },
       { id: "subscription", label: "Subscription", desc: "Monthly or quarterly retainer" },
       { id: "commission", label: "Commission", desc: "Product-based commissions" },
-      { id: "hybrid", label: "Hybrid", desc: "Combination of fee types" },
     ],
-    context: { title: "Compensation Model", body: "Your fee structure affects compliance guardrails, offer framing, and how the system positions your value proposition." },
+    context: { title: "Compensation Model", body: "Your fee structure affects compliance guardrails, offer framing, and how the system positions your value proposition. Select every model you use — we'll ask for details on each." },
+  },
+
+  /* ─── Conditional: AUM Fee % ─── */
+  {
+    id: "aum_fee_pct",
+    ai: "What's your average AUM fee percentage?",
+    type: "percent",
+    min: 0,
+    max: 300,
+    placeholder: "e.g. 1.00",
+    context: { title: "AUM Fee Rate", body: "Your AUM fee rate helps the system calculate revenue-per-client, set realistic growth projections, and frame your pricing competitively in marketing." },
+    condition: { stepId: "comp_model", hasOption: "aum" },
+  },
+
+  /* ─── Conditional: Flat Fee Amount ─── */
+  {
+    id: "flat_fee_amount",
+    ai: "What's your typical flat fee for a client?",
+    type: "currency",
+    placeholder: "e.g. 3,500",
+    context: { title: "Flat Fee Pricing", body: "Your flat fee amount helps the system model client value, frame your offer in funnels, and set ad budget recommendations." },
+    condition: { stepId: "comp_model", hasOption: "flat_fee" },
+  },
+
+  /* ─── Conditional: Hourly Rate ─── */
+  {
+    id: "hourly_rate",
+    ai: "What's your hourly rate?",
+    type: "currency",
+    placeholder: "e.g. 350",
+    context: { title: "Hourly Rate", body: "Your hourly rate helps the system position your value proposition and calculate projected client revenue for ROI modeling." },
+    condition: { stepId: "comp_model", hasOption: "hourly" },
+  },
+
+  /* ─── Conditional: Subscription Amount ─── */
+  {
+    id: "subscription_fee",
+    ai: "What's your quarterly subscription fee?",
+    type: "currency",
+    placeholder: "e.g. 750",
+    context: { title: "Quarterly Subscription Fee", body: "Your quarterly subscription fee helps the system model recurring revenue, position your retainer offer, and calculate lifetime client value." },
+    condition: { stepId: "comp_model", hasOption: "subscription" },
+  },
+
+  /* ─── Conditional: Commission % ─── */
+  {
+    id: "commission_pct",
+    ai: "What's your average commission percentage on products?",
+    type: "percent",
+    min: 0,
+    max: 1500,
+    placeholder: "e.g. 5.00",
+    context: { title: "Commission Rate", body: "Your commission rate helps the system calculate per-sale revenue, model campaign ROI for product-based offers, and set acquisition cost targets." },
+    condition: { stepId: "comp_model", hasOption: "commission" },
+  },
+
+  /* ─── Conditional: Annuity Commission ─── */
+  {
+    id: "annuity_avg_commission",
+    ai: "You mentioned annuities — what's your average commission per annuity sale?",
+    type: "currency",
+    placeholder: "e.g. 4,500",
+    context: { title: "Annuity Commission", body: "Your average annuity commission helps the system calculate ROI projections, cost-per-acquisition targets, and campaign profitability for annuity-focused campaigns." },
+    condition: { stepId: "service_offerings", hasOption: "annuities" },
+  },
+
+  /* ─── Conditional: Financial Plan Price ─── */
+  {
+    id: "financial_plan_avg_price",
+    ai: "You offer financial plans — what do you typically charge for a plan?",
+    type: "currency",
+    placeholder: "e.g. 2,500",
+    context: { title: "Financial Plan Pricing", body: "Your average plan price helps the system model lead-to-revenue conversion, set ad budget recommendations, and frame your planning offer in funnels." },
+    condition: { stepId: "service_offerings", hasOption: "financial_plans" },
   },
   {
     id: "asset_minimums",
@@ -481,6 +565,13 @@ const STEP_LABELS: Record<string, string> = {
   team_members: "Team",
   service_offerings: "Services",
   comp_model: "Fees",
+  aum_fee_pct: "AUM %",
+  flat_fee_amount: "Flat Fee",
+  hourly_rate: "Hourly Rate",
+  subscription_fee: "Subscription",
+  commission_pct: "Commission %",
+  annuity_avg_commission: "Annuity Commission",
+  financial_plan_avg_price: "Plan Price",
   asset_minimums: "Minimums",
   case_studies: "Case Studies",
   ideal_client: "Ideal Client",
@@ -510,6 +601,18 @@ export default function OnboardingChat() {
   const [currentStep, setCurrentStep] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
   const [selections, setSelections] = useState<Record<string, boolean>>({});
+  const [answers, _setAnswers] = useState<Record<string, string[]>>({});
+  const answersRef = useRef<Record<string, string[]>>({});
+  /** Always update both state (for re-render) and ref (for immediate reads in advance/goBack) */
+  function setAnswers(updater: (prev: Record<string, string[]>) => Record<string, string[]>) {
+    _setAnswers((prev) => {
+      const next = updater(prev);
+      answersRef.current = next;
+      return next;
+    });
+  }
+  const [currencyVal, setCurrencyVal] = useState("");
+  const [percentVal, setPercentVal] = useState(100);
   const [inputVal, setInputVal] = useState("");
   const [rangeVal, setRangeVal] = useState<[number, number]>([55, 70]);
   const [sliderVal, setSliderVal] = useState(5);
@@ -594,6 +697,12 @@ export default function OnboardingChat() {
     if (step?.type === "prefilled_text") {
       setPrefillVal(step.prefill ?? "");
     }
+    if (step?.type === "percent") {
+      // Default to ~1/3 of range (e.g. 1.00% for AUM)
+      const pMin = step.min ?? 0;
+      const pMax = step.max ?? 300;
+      setPercentVal(Math.round((pMax - pMin) / 3) + pMin);
+    }
     if (step?.type === "analysis") {
       setAnalyzing(true);
       const analysisMsgs = [
@@ -648,20 +757,33 @@ export default function OnboardingChat() {
     }
   }, [messages]);
 
+  /** Check if a conditional step should be shown based on prior answers (reads ref for immediate accuracy) */
+  function isStepActive(s: Step): boolean {
+    if (!s.condition) return true;
+    const prev = answersRef.current[s.condition.stepId];
+    return prev ? prev.includes(s.condition.hasOption) : false;
+  }
+
   function advance() {
-    if (currentStep < STEPS.length - 1) {
-      setCurrentStep((prev) => prev + 1);
-      setSelections({});
-      setInputVal("");
-      setShowUploadZone(false);
+    if (currentStep >= STEPS.length - 1) return;
+    // Find next active step (skip conditional steps whose condition isn't met)
+    let next = currentStep + 1;
+    while (next < STEPS.length - 1 && !isStepActive(STEPS[next])) {
+      next++;
     }
+    setCurrentStep(next);
+    setSelections({});
+    setInputVal("");
+    setCurrencyVal("");
+    setPercentVal(STEPS[next]?.min != null ? Math.round(((STEPS[next].max ?? 300) - (STEPS[next].min ?? 0)) / 3) + (STEPS[next].min ?? 0) : 100);
+    setShowUploadZone(false);
   }
 
   function goBack() {
     if (currentStep <= 0) return;
-    // Find the previous non-analysis step (skip analysis steps)
+    // Find the previous non-analysis, active step
     let target = currentStep - 1;
-    while (target > 0 && STEPS[target].type === "analysis") {
+    while (target > 0 && (STEPS[target].type === "analysis" || !isStepActive(STEPS[target]))) {
       target--;
     }
     // Remove messages from the current step and the step we're going back to (so they can re-answer)
@@ -671,6 +793,8 @@ export default function OnboardingChat() {
     setCurrentStep(target);
     setSelections({});
     setInputVal("");
+    setCurrencyVal("");
+    setPercentVal(STEPS[target]?.min != null ? Math.round(((STEPS[target].max ?? 300) - (STEPS[target].min ?? 0)) / 3) + (STEPS[target].min ?? 0) : 100);
     setShowUploadZone(false);
     setEditingMsgIdx(null);
   }
@@ -749,12 +873,14 @@ export default function OnboardingChat() {
     if (selected.length === 0) return;
     const labels = step.options!.filter((o) => selected.includes(o.id)).map((o) => o.label);
     setMessages((prev) => [...prev, { stepId: step.id, sender: "user", text: labels.join(", ") }]);
+    setAnswers((prev) => ({ ...prev, [step.id]: selected }));
     setSelections({});
     setTimeout(() => advance(), 400);
   }
 
   function handleSingleChoice(opt: StepOption) {
     setMessages((prev) => [...prev, { stepId: step.id, sender: "user", text: opt.label }]);
+    setAnswers((prev) => ({ ...prev, [step.id]: [opt.id] }));
     setTimeout(() => advance(), 400);
   }
 
@@ -771,6 +897,20 @@ export default function OnboardingChat() {
       const labels = step.labels ?? [];
       setMessages((prev) => [...prev, { stepId: step.id, sender: "user", text: labels[sliderVal] ?? String(sliderVal) }]);
     }
+    setTimeout(() => advance(), 400);
+  }
+
+  function handleCurrencySubmit() {
+    const cleaned = currencyVal.trim();
+    if (!cleaned) return;
+    setMessages((prev) => [...prev, { stepId: step.id, sender: "user", text: `$${cleaned}` }]);
+    setCurrencyVal("");
+    setTimeout(() => advance(), 400);
+  }
+
+  function handlePercentSubmit() {
+    const display = (percentVal / 100).toFixed(2);
+    setMessages((prev) => [...prev, { stepId: step.id, sender: "user", text: `${display}%` }]);
     setTimeout(() => advance(), 400);
   }
 
@@ -1037,6 +1177,62 @@ export default function OnboardingChat() {
                   </div>
                 )}
 
+                {step.type === "currency" && (
+                  <div>
+                    <div className="obc-currency-wrap">
+                      <span className="obc-currency-symbol">$</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={currencyVal}
+                        onChange={(e) => {
+                          // Allow only digits and commas — auto-format with commas
+                          const raw = e.target.value.replace(/[^0-9]/g, "");
+                          if (!raw) { setCurrencyVal(""); return; }
+                          const formatted = Number(raw).toLocaleString("en-US");
+                          setCurrencyVal(formatted);
+                        }}
+                        onKeyDown={(e) => { if (e.key === "Enter" && currencyVal.trim()) handleCurrencySubmit(); }}
+                        placeholder={step.placeholder?.replace("$", "") ?? "0"}
+                        className="obc-currency-input"
+                        autoFocus
+                      />
+                    </div>
+                    <button onClick={handleCurrencySubmit} disabled={!currencyVal.trim()} className="obc-btn obc-btn--primary" style={{ marginTop: 12 }}>Continue</button>
+                  </div>
+                )}
+
+                {step.type === "percent" && (() => {
+                  const pMin = step.min ?? 0;
+                  const pMax = step.max ?? 300;
+                  const display = (percentVal / 100).toFixed(2);
+                  const pct = ((percentVal - pMin) / (pMax - pMin)) * 100;
+                  return (
+                    <div>
+                      <div className="obc-pct-display">
+                        <span className="obc-pct-value">{display}</span>
+                        <span className="obc-pct-symbol">%</span>
+                      </div>
+                      <div className="obc-pct-slider-wrap">
+                        <input
+                          type="range"
+                          min={pMin}
+                          max={pMax}
+                          value={percentVal}
+                          onChange={(e) => setPercentVal(+e.target.value)}
+                          className="obc-slider-input obc-pct-slider"
+                          style={{ "--pct-fill": `${pct}%` } as React.CSSProperties}
+                        />
+                        <div className="obc-pct-bounds">
+                          <span>{(pMin / 100).toFixed(1)}%</span>
+                          <span>{(pMax / 100).toFixed(1)}%</span>
+                        </div>
+                      </div>
+                      <button onClick={handlePercentSubmit} className="obc-btn obc-btn--primary" style={{ marginTop: 12 }}>Continue</button>
+                    </div>
+                  );
+                })()}
+
                 {step.type === "prefilled_text" && (
                   <div>
                     <textarea value={prefillVal} onChange={(e) => setPrefillVal(e.target.value)} className="obc-textarea" />
@@ -1104,6 +1300,8 @@ export default function OnboardingChat() {
                     if (step.type === "slider") return "Add context — e.g. any compliance specifics...";
                     if (step.type === "range") return "Add context — e.g. we also work with younger clients...";
                     if (step.type === "upload") return "Add context — e.g. describe what you're uploading...";
+                    if (step.type === "currency") return "Add context — e.g. varies by product type...";
+                    if (step.type === "percent") return "Add context — e.g. tiered based on AUM level...";
                     return "Add context or additional details...";
                   })()}
                   className="obc-text-input"
@@ -1814,6 +2012,75 @@ export default function OnboardingChat() {
         .obc-textarea:focus {
           outline: none;
           border-color: #ededed;
+        }
+
+        /* ── Currency input ── */
+        .obc-currency-wrap {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          background: #0a0a0a;
+          border: 1px solid #2e2e2e;
+          border-radius: 10px;
+          padding: 14px 18px;
+          transition: border-color 0.2s;
+        }
+        .obc-currency-wrap:focus-within {
+          border-color: #ededed;
+        }
+        .obc-currency-symbol {
+          font-size: 22px;
+          font-weight: 600;
+          color: #888;
+        }
+        .obc-currency-input {
+          flex: 1;
+          background: transparent;
+          border: none;
+          outline: none;
+          color: #ededed;
+          font-size: 22px;
+          font-weight: 600;
+          font-family: inherit;
+          letter-spacing: 0.5px;
+        }
+        .obc-currency-input::placeholder {
+          color: #444;
+          font-weight: 400;
+        }
+
+        /* ── Percent slider ── */
+        .obc-pct-display {
+          display: flex;
+          align-items: baseline;
+          justify-content: center;
+          gap: 4px;
+          margin-bottom: 16px;
+        }
+        .obc-pct-value {
+          font-size: 36px;
+          font-weight: 700;
+          color: #ededed;
+          letter-spacing: -1px;
+          font-variant-numeric: tabular-nums;
+        }
+        .obc-pct-symbol {
+          font-size: 20px;
+          font-weight: 600;
+          color: #888;
+        }
+        .obc-pct-slider-wrap {
+          margin-bottom: 4px;
+        }
+        .obc-pct-slider {
+          --pct-fill: 33%;
+        }
+        .obc-pct-bounds {
+          display: flex;
+          justify-content: space-between;
+          font-size: 11px;
+          color: #666;
+          margin-top: 4px;
         }
 
         /* ── Upload ── */

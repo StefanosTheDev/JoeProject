@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface ChatMessage {
   sender: "user" | "ai";
@@ -134,6 +135,18 @@ const mockData: BlueprintData = {
   tone: "Professional but warm. Lead with empathy, back with data. No jargon.",
 };
 
+/** Pool of additional angles the AI can "generate" */
+const EXTRA_ANGLES: Angle[] = [
+  { id: 100, name: "The Pension Puzzle", category: "Income", hook: "You have a pension — but do you know the 3 decisions that could cost you $200K if you get them wrong?", why: "Pension holders are high-value prospects. Creates urgency around irrevocable decisions they haven't fully analyzed." },
+  { id: 101, name: "Widow's Tax Trap", category: "Tax", hook: "When one spouse passes, the surviving spouse gets hit with a massive tax increase nobody warned them about.", why: "Emotionally powerful and underserved topic. Targets couples who haven't planned for the tax impact of losing a spouse." },
+  { id: 102, name: "The Inheritance Mistake", category: "Tax", hook: "Your kids could lose 40% of what you leave them. Here's the one move that changes everything.", why: "Legacy planning is a deep emotional driver. Quantified loss creates urgency to act now." },
+  { id: 103, name: "The Early Retirement Trap", category: "Healthcare", hook: "Want to retire before 65? There's a healthcare gap that costs early retirees $30K+ if they don't plan for it.", why: "Pre-65 healthcare is a real blocker for early retirement. Specific cost makes it tangible." },
+  { id: 104, name: "The Inflation Blindspot", category: "Risk", hook: "Inflation has already eroded 25% of your purchasing power since 2020. Here's what that means for your retirement plan.", why: "Timely and relevant. Makes an abstract concern concrete with a specific, relatable number." },
+  { id: 105, name: "The RMD Time Bomb", category: "Tax", hook: "At 73, the IRS forces you to withdraw from your retirement accounts — and most people aren't ready for the tax bill.", why: "Required minimum distributions catch people off guard. Creates a planning window that demands action." },
+  { id: 106, name: "The Spousal Benefit Secret", category: "SS", hook: "There's a Social Security spousal strategy that most couples never hear about. It could be worth $50K+ over your retirement.", why: "Spousal benefits are misunderstood. Dollar amount creates curiosity and positions the advisor as an expert." },
+  { id: 107, name: "The Bucket Strategy", category: "Income", hook: "The smartest retirees don't have one investment account — they have three 'buckets.' Here's why it changes everything.", why: "Framework-based content performs well. Simple concept that implies sophisticated planning behind it." },
+];
+
 const categoryColors: Record<AngleCategory, CategoryColor> = {
   Tax: { bg: "rgba(96,165,250,0.1)", text: "#60a5fa" },
   SS: { bg: "rgba(80,227,194,0.1)", text: "#50e3c2" },
@@ -160,16 +173,31 @@ const outcomeColors = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function MarketingBlueprint(): React.JSX.Element {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabId>("icp");
   const [expandedAngle, setExpandedAngle] = useState<number | null>(null);
   const [expandedPain, setExpandedPain] = useState<number | null>(null);
+  const [editMode, setEditMode] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { sender: "ai", text: "Your Marketing Blueprint is ready. I can walk you through the strategy, answer questions, or make adjustments. What would you like to dig into?" },
   ]);
   const [chatInput, setChatInput] = useState("");
+  const [aiThinking, setAiThinking] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
-  const d = mockData;
+  // ─── Live blueprint state ───
+  const [angles, setAngles] = useState<Angle[]>(mockData.angles);
+  const extraAnglesRef = useRef([...EXTRA_ANGLES]);
+
+  // ─── Editable state ───
+  const [eduNotes, setEduNotes] = useState<Record<number, string>>({});
+  const [angleNotes, setAngleNotes] = useState<Record<number, string>>({});
+  const [painNotes, setPainNotes] = useState<Record<number, string>>({});
+  const [editGeo, setEditGeo] = useState(mockData.targeting.geo);
+  const [editGeoSecondary, setEditGeoSecondary] = useState(mockData.targeting.geoSecondary);
+  const [editCompliance, setEditCompliance] = useState<BlueprintData["complianceLevel"]>(mockData.complianceLevel);
+
+  const d = { ...mockData, angles };
 
   const suggestedPrompts = [
     "Why did you choose these pain points?",
@@ -184,17 +212,86 @@ export default function MarketingBlueprint(): React.JSX.Element {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
-  }, [chatMessages]);
+  }, [chatMessages, aiThinking]);
 
   function handleChatSend(text?: string) {
     const msg = (text ?? chatInput).trim();
     if (!msg) return;
     setChatMessages((prev) => [...prev, { sender: "user", text: msg }]);
     setChatInput("");
-    // Simulate AI response
-    setTimeout(() => {
-      setChatMessages((prev) => [...prev, { sender: "ai", text: "That's a great question. Let me think through that based on your blueprint data and get back to you with a detailed answer." }]);
-    }, 800);
+    setAiThinking(true);
+
+    const lower = msg.toLowerCase();
+    const isAngleRequest = lower.includes("suggest") && lower.includes("angle") ||
+                           lower.includes("add") && lower.includes("angle") ||
+                           lower.includes("more angle") ||
+                           lower.includes("new angle");
+    const isReviseAngle = lower.includes("revise ad angle") || lower.includes("revise angle");
+    const isRevisePain = lower.includes("revise pain point");
+    const isReviseEdu = lower.includes("revise education topic");
+
+    if (isAngleRequest) {
+      // Actually generate new angles
+      const available = extraAnglesRef.current;
+      if (available.length === 0) {
+        setTimeout(() => {
+          setAiThinking(false);
+          setChatMessages((prev) => [...prev, { sender: "ai", text: "I've already added all available angles to your blueprint. You currently have " + angles.length + " angles — that's a strong set for Andromeda optimization. If you want me to create angles for a specific pain point or topic, describe it and I'll craft one." }]);
+        }, 2000);
+        return;
+      }
+
+      const count = Math.min(3, available.length);
+      const newAngles = available.splice(0, count);
+      // Re-number them based on current max
+      const maxId = Math.max(...angles.map(a => a.id));
+      const numbered = newAngles.map((a, i) => ({ ...a, id: maxId + i + 1 }));
+
+      // Simulate thinking
+      setTimeout(() => {
+        setAngles((prev) => [...prev, ...numbered]);
+        setAiThinking(false);
+        const names = numbered.map(a => `**${a.name}** (${a.category})`).join(", ");
+        setChatMessages((prev) => [...prev, {
+          sender: "ai",
+          text: `Done. I've added ${count} new angles based on your ICP's pain points and the gaps in your current angle coverage:\n\n${names}\n\nYou now have ${angles.length + count} total angles. Check the Ad Angles tab to review them — each one has a hook and strategic rationale. Want me to generate more, or adjust any of these?`,
+        }]);
+      }, 3000);
+    } else if (isReviseAngle) {
+      // Simulate revising an angle
+      setTimeout(() => {
+        setAiThinking(false);
+        setChatMessages((prev) => [...prev, {
+          sender: "ai",
+          text: "I've reviewed your feedback and revised the angle. The updated hook and rationale are designed to hit harder on the emotional driver while staying compliant. I'll apply these changes to your blueprint once you save — check the Ad Angles tab to review.",
+        }]);
+      }, 2500);
+    } else if (isRevisePain) {
+      setTimeout(() => {
+        setAiThinking(false);
+        setChatMessages((prev) => [...prev, {
+          sender: "ai",
+          text: "Good feedback. I've refined the pain point based on your notes — the description and emotional weight have been adjusted to better reflect what you're hearing from real clients. This will cascade into more relevant ad angles and content topics. Review it in the Pain Points tab.",
+        }]);
+      }, 2500);
+    } else if (isReviseEdu) {
+      setTimeout(() => {
+        setAiThinking(false);
+        setChatMessages((prev) => [...prev, {
+          sender: "ai",
+          text: "I've revised the education topic with your context. The updated description will influence webinar content, long-form video scripts, and organic post themes. Take a look in the Education Topics tab and let me know if it needs further refinement.",
+        }]);
+      }, 2500);
+    } else {
+      // Generic response
+      setTimeout(() => {
+        setAiThinking(false);
+        setChatMessages((prev) => [...prev, {
+          sender: "ai",
+          text: "That's a great question. Let me think through that based on your blueprint data and get back to you with a detailed answer.",
+        }]);
+      }, 1500);
+    }
   }
 
   const tabs: Tab[] = [
@@ -578,6 +675,137 @@ export default function MarketingBlueprint(): React.JSX.Element {
           border-bottom: none;
         }
 
+        /* ── Edit mode ── */
+        .bp-edit-banner {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 12px 18px;
+          background: rgba(96,165,250,0.06);
+          border: 1px solid rgba(96,165,250,0.15);
+          border-radius: 10px;
+          margin-bottom: 20px;
+          font-size: 12px;
+          color: #888;
+          line-height: 1.5;
+        }
+        .bp-edit-banner svg {
+          flex-shrink: 0;
+          color: #60a5fa;
+        }
+        .bp-edit-banner strong {
+          color: #ededed;
+          font-weight: 500;
+        }
+        .bp-edit-note-wrap {
+          margin-top: 14px;
+          animation: bp-fade-in 0.2s ease;
+        }
+        @keyframes bp-fade-in {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .bp-edit-note {
+          width: 100%;
+          min-height: 60px;
+          padding: 10px 14px;
+          border-radius: 8px;
+          border: 1px solid #2e2e2e;
+          background: #0a0a0a;
+          color: #ededed;
+          font-size: 12px;
+          line-height: 1.5;
+          resize: vertical;
+          font-family: inherit;
+          box-sizing: border-box;
+          transition: border-color 0.15s;
+        }
+        .bp-edit-note:focus {
+          outline: none;
+          border-color: #60a5fa;
+        }
+        .bp-edit-note::placeholder {
+          color: #444;
+        }
+        .bp-edit-ai-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 8px;
+          padding: 6px 14px;
+          border-radius: 6px;
+          border: 1px solid rgba(96,165,250,0.2);
+          background: rgba(96,165,250,0.06);
+          color: #60a5fa;
+          font-size: 11px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.15s;
+          font-family: inherit;
+        }
+        .bp-edit-ai-btn:hover {
+          background: rgba(96,165,250,0.12);
+          border-color: rgba(96,165,250,0.3);
+        }
+        .bp-edit-add-wrap {
+          margin-top: 14px;
+          display: flex;
+          justify-content: center;
+        }
+        .bp-edit-field {
+          width: 100%;
+          padding: 8px 12px;
+          border-radius: 8px;
+          border: 1px solid #2e2e2e;
+          background: #0a0a0a;
+          color: #ededed;
+          font-size: 13px;
+          font-family: inherit;
+          box-sizing: border-box;
+          transition: border-color 0.15s;
+        }
+        .bp-edit-field:focus {
+          outline: none;
+          border-color: #60a5fa;
+        }
+        .bp-edit-locked {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 16px;
+          background: rgba(237,237,237,0.03);
+          border: 1px solid #1f1f1f;
+          border-radius: 8px;
+          margin-bottom: 16px;
+          font-size: 11px;
+          color: #555;
+        }
+        .bp-edit-locked svg {
+          flex-shrink: 0;
+        }
+        .bp-edit-highlight {
+          background: rgba(96,165,250,0.04);
+          border: 1px dashed rgba(96,165,250,0.25);
+          animation: bp-fade-in 0.2s ease;
+        }
+        .bp-edit-badge {
+          font-size: 9px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #60a5fa;
+          background: rgba(96,165,250,0.1);
+          padding: 2px 7px;
+          border-radius: 4px;
+        }
+        .bp-compliance-level--editable {
+          cursor: pointer;
+        }
+        .bp-compliance-level--editable:hover {
+          border-color: #454545;
+          color: #ededed;
+        }
+
         /* ── Layout ── */
         .bp-layout {
           display: flex;
@@ -771,6 +999,33 @@ export default function MarketingBlueprint(): React.JSX.Element {
           background: #d4d4d4;
         }
 
+        /* ── Thinking dots ── */
+        .bp-chat-thinking {
+          padding: 12px 18px !important;
+        }
+        .bp-thinking-dots {
+          display: flex;
+          gap: 4px;
+          align-items: center;
+        }
+        .bp-thinking-dots span {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #555;
+          animation: bp-dot-bounce 1.2s infinite;
+        }
+        .bp-thinking-dots span:nth-child(2) {
+          animation-delay: 0.2s;
+        }
+        .bp-thinking-dots span:nth-child(3) {
+          animation-delay: 0.4s;
+        }
+        @keyframes bp-dot-bounce {
+          0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+          30% { opacity: 1; transform: translateY(-4px); }
+        }
+
         @keyframes bpFadeIn {
           from { opacity: 0; transform: translateY(6px); }
           to { opacity: 1; transform: translateY(0); }
@@ -787,11 +1042,29 @@ export default function MarketingBlueprint(): React.JSX.Element {
           </div>
         </div>
         <div className="bp-header-actions">
-          <button className="bp-btn-secondary">Edit Blueprint</button>
-          <button className="bp-btn-primary">
-            Approve & Continue
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-          </button>
+          {editMode ? (
+            <>
+              <button className="bp-btn-secondary" onClick={() => setEditMode(false)}>Cancel</button>
+              <button className="bp-btn-primary" onClick={() => {
+                // Apply edits
+                mockData.targeting.geo = editGeo;
+                mockData.targeting.geoSecondary = editGeoSecondary;
+                mockData.complianceLevel = editCompliance;
+                setEditMode(false);
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                Save Changes
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="bp-btn-secondary" onClick={() => setEditMode(true)}>Edit Blueprint</button>
+              <button className="bp-btn-primary" onClick={() => navigate("/amplify-os/content-studio")}>
+                Approve & Continue
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </button>
+            </>
+          )}
         </div>
       </header>
 
@@ -803,6 +1076,14 @@ export default function MarketingBlueprint(): React.JSX.Element {
           <h1>{d.avatar.label}</h1>
           <p className="bp-hero-sub">{d.advisorName} · {d.market} · Compliance: {d.complianceLevel}</p>
         </div>
+
+        {/* Edit mode banner */}
+        {editMode && (
+          <div className="bp-edit-banner">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+            <span>Editing — You can add notes to <strong>Pain Points</strong>, <strong>Ad Angles</strong>, and <strong>Education Topics</strong>. You can edit <strong>Targeting</strong> markets and <strong>Compliance Level</strong>. Use the chat to revise the ICP or request AI rewrites.</span>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="bp-stats">
@@ -832,6 +1113,12 @@ export default function MarketingBlueprint(): React.JSX.Element {
         {/* TAB: ICP PROFILE */}
         {activeTab === "icp" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            {editMode && (
+              <div className="bp-edit-locked" style={{ gridColumn: "1 / -1" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                ICP Profile can only be revised through the chat. Ask the Strategy Assistant to make changes.
+              </div>
+            )}
             <div className="bp-card">
               <h3 className="bp-card-title">Demographics</h3>
               {[
@@ -880,8 +1167,8 @@ export default function MarketingBlueprint(): React.JSX.Element {
             {d.painPoints.map((pp, i) => {
               const isOpen = expandedPain === i;
               return (
-                <div key={i} onClick={() => setExpandedPain(isOpen ? null : i)} className={`bp-expandable ${isOpen ? "bp-expandable--open" : ""}`}>
-                  <div className="bp-expand-header">
+                <div key={i} className={`bp-expandable ${isOpen ? "bp-expandable--open" : ""}`}>
+                  <div className="bp-expand-header" onClick={() => setExpandedPain(isOpen ? null : i)} style={{ cursor: "pointer" }}>
                     <div className="bp-rank" style={{ background: "rgba(237,237,237,0.06)", color: "#ededed" }}>
                       {pp.rank}
                     </div>
@@ -904,6 +1191,31 @@ export default function MarketingBlueprint(): React.JSX.Element {
                           This pain point directly informs ad angles, webinar content, and sequence messaging. Ads that lead with this concern will resonate because the emotional weight ({pp.emotional.toLowerCase()}) combined with {pp.urgency.toLowerCase()} urgency creates a strong motivation to act.
                         </div>
                       </div>
+                      {editMode && (
+                        <div className="bp-edit-note-wrap">
+                          <textarea
+                            value={painNotes[i] ?? ""}
+                            onChange={(e) => { e.stopPropagation(); setPainNotes((prev) => ({ ...prev, [i]: e.target.value })); }}
+                            onClick={(e) => e.stopPropagation()}
+                            placeholder="Add notes — e.g. pain points you hear from clients, things that are missing..."
+                            className="bp-edit-note"
+                          />
+                          <button
+                            className="bp-edit-ai-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const note = painNotes[i]?.trim();
+                              const prompt = note
+                                ? `Revise pain point "${pp.title}" with this feedback: ${note}`
+                                : `Completely revise pain point "${pp.title}" with a fresh perspective`;
+                              handleChatSend(prompt);
+                            }}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+                            Ask AI to Revise
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -923,8 +1235,8 @@ export default function MarketingBlueprint(): React.JSX.Element {
                 const cc = categoryColors[a.category] || { bg: "rgba(237,237,237,0.06)", text: "#ededed" };
                 const isExp = expandedAngle === i;
                 return (
-                  <div key={i} onClick={() => setExpandedAngle(isExp ? null : i)} className={`bp-expandable ${isExp ? "bp-expandable--open" : ""}`}>
-                    <div style={{ padding: "14px 18px" }}>
+                  <div key={i} className={`bp-expandable ${isExp ? "bp-expandable--open" : ""}`}>
+                    <div style={{ padding: "14px 18px", cursor: "pointer" }} onClick={() => setExpandedAngle(isExp ? null : i)}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span className="bp-tag" style={{ background: cc.bg, color: cc.text, borderRadius: 6 }}>{a.category}</span>
@@ -940,12 +1252,45 @@ export default function MarketingBlueprint(): React.JSX.Element {
                           <div className="bp-dim-label" style={{ marginBottom: 6 }}>Why This Angle Works</div>
                           <div style={{ fontSize: 12, color: "#888", lineHeight: 1.6 }}>{a.why}</div>
                         </div>
+                        {editMode && (
+                          <div className="bp-edit-note-wrap">
+                            <textarea
+                              value={angleNotes[i] ?? ""}
+                              onChange={(e) => { e.stopPropagation(); setAngleNotes((prev) => ({ ...prev, [i]: e.target.value })); }}
+                              onClick={(e) => e.stopPropagation()}
+                              placeholder="Add insights, missing pain points, or notes for this angle..."
+                              className="bp-edit-note"
+                            />
+                            <button
+                              className="bp-edit-ai-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const note = angleNotes[i]?.trim();
+                                const prompt = note
+                                  ? `Revise ad angle "${a.name}" with this feedback: ${note}`
+                                  : `Completely revise ad angle "${a.name}" with a fresh hook and approach`;
+                                handleChatSend(prompt);
+                              }}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+                              Ask AI to Revise
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
                 );
               })}
             </div>
+            {editMode && (
+              <div className="bp-edit-add-wrap">
+                <button className="bp-edit-ai-btn" onClick={() => handleChatSend("Suggest additional ad angles based on pain points I think are missing")}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                  Ask AI to Suggest More Angles
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -967,7 +1312,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
                     <div className="bp-edu-num" style={{ background: colors[i].bg, color: colors[i].text }}>
                       {t.num}
                     </div>
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>{t.title}</div>
                       <div style={{ fontSize: 13, color: "#888", lineHeight: 1.6 }}>{t.description}</div>
                       <div style={{ marginTop: 12, display: "flex", gap: 6 }}>
@@ -975,6 +1320,29 @@ export default function MarketingBlueprint(): React.JSX.Element {
                           <span key={tag} className="bp-tag-outline">{tag}</span>
                         ))}
                       </div>
+                      {editMode && (
+                        <div className="bp-edit-note-wrap">
+                          <textarea
+                            value={eduNotes[i] ?? ""}
+                            onChange={(e) => setEduNotes((prev) => ({ ...prev, [i]: e.target.value }))}
+                            placeholder="Leave a note — e.g. different angles, additional context, things to add or change..."
+                            className="bp-edit-note"
+                          />
+                          <button
+                            className="bp-edit-ai-btn"
+                            onClick={() => {
+                              const note = eduNotes[i]?.trim();
+                              const prompt = note
+                                ? `Revise education topic "${t.title}" with this context: ${note}`
+                                : `Completely revise education topic "${t.title}" with a fresh perspective`;
+                              handleChatSend(prompt);
+                            }}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+                            Ask AI to Revise
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -992,13 +1360,37 @@ export default function MarketingBlueprint(): React.JSX.Element {
                 <div className="bp-callout-title" style={{ color: "#50e3c2" }}>{d.targeting.approach}</div>
                 <div className="bp-callout-sub">Let the creative do the targeting. Broad audience + specific messaging = Andromeda finds the right people.</div>
               </div>
-              <div style={{ marginBottom: 18 }}>
-                <div className="bp-dim-label" style={{ marginBottom: 8 }}>Primary Market</div>
-                <div style={{ fontSize: 13 }}>{d.targeting.geo}</div>
+              <div className={editMode ? "bp-edit-highlight" : ""} style={{ marginBottom: 18, padding: editMode ? 12 : 0, borderRadius: 8 }}>
+                <div className="bp-dim-label" style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                  Primary Market
+                  {editMode && <span className="bp-edit-badge">Editable</span>}
+                </div>
+                {editMode ? (
+                  <input
+                    type="text"
+                    value={editGeo}
+                    onChange={(e) => setEditGeo(e.target.value)}
+                    className="bp-edit-field"
+                  />
+                ) : (
+                  <div style={{ fontSize: 13 }}>{d.targeting.geo}</div>
+                )}
               </div>
-              <div>
-                <div className="bp-dim-label" style={{ marginBottom: 8 }}>Expansion Markets</div>
-                <div style={{ fontSize: 13, color: "#888" }}>{d.targeting.geoSecondary}</div>
+              <div className={editMode ? "bp-edit-highlight" : ""} style={{ padding: editMode ? 12 : 0, borderRadius: 8 }}>
+                <div className="bp-dim-label" style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                  Expansion Markets
+                  {editMode && <span className="bp-edit-badge">Editable</span>}
+                </div>
+                {editMode ? (
+                  <input
+                    type="text"
+                    value={editGeoSecondary}
+                    onChange={(e) => setEditGeoSecondary(e.target.value)}
+                    className="bp-edit-field"
+                  />
+                ) : (
+                  <div style={{ fontSize: 13, color: "#888" }}>{d.targeting.geoSecondary}</div>
+                )}
               </div>
             </div>
             <div className="bp-card">
@@ -1008,19 +1400,26 @@ export default function MarketingBlueprint(): React.JSX.Element {
                   <span key={i} className="bp-interest">{interest}</span>
                 ))}
               </div>
-              <div style={{ marginTop: 24 }}>
-                <div className="bp-dim-label" style={{ marginBottom: 10 }}>Compliance Level</div>
+              <div className={editMode ? "bp-edit-highlight" : ""} style={{ marginTop: 24, padding: editMode ? 12 : 0, borderRadius: 8 }}>
+                <div className="bp-dim-label" style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                  Compliance Level
+                  {editMode && <span className="bp-edit-badge">Editable</span>}
+                </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {(["Conservative", "Moderate", "Aggressive"] as const).map((level, i) => {
-                    const active = d.complianceLevel === level;
+                    const active = editMode ? editCompliance === level : d.complianceLevel === level;
                     const activeColors = [
                       { bg: "rgba(80,227,194,0.1)", color: "#50e3c2" },
                       { bg: "rgba(245,158,11,0.1)", color: "#f59e0b" },
                       { bg: "rgba(239,68,68,0.1)", color: "#ef4444" },
                     ];
                     return (
-                      <div key={level} className={`bp-compliance-level ${active ? "bp-compliance-level--active" : ""}`}
-                        style={active ? { background: activeColors[i].bg, color: activeColors[i].color, borderColor: "transparent" } : {}}>
+                      <div
+                        key={level}
+                        className={`bp-compliance-level ${active ? "bp-compliance-level--active" : ""} ${editMode ? "bp-compliance-level--editable" : ""}`}
+                        style={active ? { background: activeColors[i].bg, color: activeColors[i].color, borderColor: "transparent" } : {}}
+                        onClick={() => editMode && setEditCompliance(level)}
+                      >
                         {level}
                       </div>
                     );
@@ -1073,6 +1472,12 @@ export default function MarketingBlueprint(): React.JSX.Element {
 
           return (
             <div>
+              {editMode && (
+                <div className="bp-edit-locked">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                  Projections are calculated automatically based on your blueprint data and cannot be manually edited.
+                </div>
+              )}
               <p style={{ fontSize: 13, color: "#666", margin: "0 0 24px", lineHeight: 1.6 }}>
                 Based on your target audience, service model, and market — here's what a typical month could look like. These are conservative estimates based on industry benchmarks for financial advisor campaigns.
               </p>
@@ -1171,7 +1576,17 @@ export default function MarketingBlueprint(): React.JSX.Element {
               <div className={`bp-chat-bubble bp-chat-bubble--${msg.sender}`}>{msg.text}</div>
             </div>
           ))}
-          {chatMessages.length === 1 && (
+          {aiThinking && (
+            <div className="bp-chat-msg bp-chat-msg--ai">
+              <div className="bp-chat-msg-avatar">A</div>
+              <div className="bp-chat-bubble bp-chat-bubble--ai bp-chat-thinking">
+                <div className="bp-thinking-dots">
+                  <span /><span /><span />
+                </div>
+              </div>
+            </div>
+          )}
+          {chatMessages.length === 1 && !aiThinking && (
             <div className="bp-chat-prompts">
               <div className="bp-chat-prompts-label">Suggested questions</div>
               {suggestedPrompts.map((p, i) => (
