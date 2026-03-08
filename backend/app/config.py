@@ -79,6 +79,56 @@ class Settings:
     elevenlabs_api_key: str = field(
         default_factory=lambda: os.environ.get("ELEVENLABS_API_KEY", "").strip()
     )
+    # SendBlue (iMessage / SMS — Phase 1)
+    sendblue_api_key_id: str = field(
+        default_factory=lambda: os.environ.get("SENDBLUE_API_KEY_ID", "").strip()
+    )
+    sendblue_api_secret: str = field(
+        default_factory=lambda: os.environ.get("SENDBLUE_API_SECRET", "").strip()
+    )
+    sendblue_from_number: str = field(
+        default_factory=lambda: os.environ.get("SENDBLUE_FROM_NUMBER", "").strip()
+    )
+    # Resend (email — Phase 1)
+    resend_api_key: str = field(
+        default_factory=lambda: os.environ.get("RESEND_API_KEY", "").strip()
+    )
+    # Calendly (Phase 3)
+    calendly_client_id: str = field(
+        default_factory=lambda: os.environ.get("CALENDLY_CLIENT_ID", "").strip()
+    )
+    calendly_client_secret: str = field(
+        default_factory=lambda: os.environ.get("CALENDLY_CLIENT_SECRET", "").strip()
+    )
+    calendly_redirect_uri: str = field(
+        default_factory=lambda: os.environ.get(
+            "CALENDLY_REDIRECT_URI", "http://localhost:8000/api/calendly/oauth/callback"
+        ).strip()
+    )
+    calendly_webhook_signing_key: str = field(
+        default_factory=lambda: os.environ.get("CALENDLY_WEBHOOK_SIGNING_KEY", "").strip()
+    )
+    # Zoom (Phase 3)
+    zoom_account_id: str = field(
+        default_factory=lambda: os.environ.get("ZOOM_ACCOUNT_ID", "").strip()
+    )
+    zoom_client_id: str = field(
+        default_factory=lambda: os.environ.get("ZOOM_CLIENT_ID", "").strip()
+    )
+    zoom_client_secret: str = field(
+        default_factory=lambda: os.environ.get("ZOOM_CLIENT_SECRET", "").strip()
+    )
+    # Mux (Phase 4)
+    mux_access_token_id: str = field(
+        default_factory=lambda: os.environ.get("MUX_ACCESS_TOKEN_ID", "").strip()
+    )
+    mux_secret_key: str = field(
+        default_factory=lambda: os.environ.get("MUX_SECRET_KEY", "").strip()
+    )
+    # Optional: default firm_id for messaging webhooks when contact is unknown
+    messaging_default_firm_id: str = field(
+        default_factory=lambda: os.environ.get("MESSAGING_DEFAULT_FIRM_ID", "").strip()
+    )
 
     @property
     def google_service_account_path(self) -> Path:
