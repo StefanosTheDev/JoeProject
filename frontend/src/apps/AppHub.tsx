@@ -5,7 +5,7 @@ const apps = [
   {
     name: "Amplify OS",
     description: "Growth OS for financial advisors",
-    href: "/amplify-os/firm-profile",
+    href: "/amplify-os",
   },
   {
     name: "Amplify Chat",
