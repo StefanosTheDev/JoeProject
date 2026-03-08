@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.db import close_pool, init_pool
-from app.routers import chat, documents, health, ingest, meta_ads, ghl, heygen
+from app.routers import chat, documents, health, ingest, meta_ads, voices
 
 
 @asynccontextmanager
@@ -41,8 +41,7 @@ app.add_middleware(
 
 app.include_router(chat.router, prefix="/api")
 app.include_router(documents.router, prefix="/api")
-app.include_router(ghl.router, prefix="/api")
 app.include_router(health.router, prefix="/api")
-app.include_router(heygen.router, prefix="/api")
 app.include_router(ingest.router, prefix="/api")
 app.include_router(meta_ads.router, prefix="/api")
+app.include_router(voices.router, prefix="/api")

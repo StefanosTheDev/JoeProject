@@ -75,35 +75,9 @@ class Settings:
     meta_cron_secret: str = field(
         default_factory=lambda: os.environ.get("META_CRON_SECRET", "").strip()
     )
-    # HeyGen API (video generation, avatars, video agent) — Direct API uses API Key
-    heygen_api_key: str = field(
-        default_factory=lambda: os.environ.get("HEYGEN_API_KEY", "").strip()
-    )
-    # ElevenLabs API (voice cloning, TTS) — header xi-api-key; used for voice clone, HeyGen uses voice_id
+    # ElevenLabs API (voice cloning, TTS) — header xi-api-key
     elevenlabs_api_key: str = field(
         default_factory=lambda: os.environ.get("ELEVENLABS_API_KEY", "").strip()
-    )
-    # GoHighLevel (GHL) — OAuth 2.0, Base URL https://services.leadconnectorhq.com
-    ghl_client_id: str = field(
-        default_factory=lambda: os.environ.get("GHL_CLIENT_ID", "").strip()
-    )
-    ghl_client_secret: str = field(
-        default_factory=lambda: os.environ.get("GHL_CLIENT_SECRET", "").strip()
-    )
-    ghl_redirect_uri: str = field(
-        default_factory=lambda: os.environ.get("GHL_REDIRECT_URI", "").strip()
-    )
-    # Optional: required for DRAFT apps. Copy from Marketplace Auth → Install Link (Show) URL (version_id=...)
-    ghl_version_id: str = field(
-        default_factory=lambda: os.environ.get("GHL_VERSION_ID", "").strip()
-    )
-    # Optional: use Whitelabel install host (marketplace.leadconnectorhq.com). Default False = Standard (marketplace.gohighlevel.com)
-    ghl_whitelabel_install: bool = field(
-        default_factory=lambda: os.environ.get("GHL_WHITELABEL_INSTALL", "").strip().lower() in ("1", "true", "yes")
-    )
-    # Optional: GHL webhook signing secret (HMAC SHA256). If set, POST /api/connect/webhooks verifies X-HighLevel-Signature.
-    ghl_webhook_signing_secret: str = field(
-        default_factory=lambda: os.environ.get("GHL_WEBHOOK_SIGNING_SECRET", "").strip()
     )
 
     @property

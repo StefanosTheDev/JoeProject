@@ -1,1 +1,1 @@
-# Service layer: subfolders mirror routers (chat, documents, ghl, health, heygen, ingest, meta_ads) plus shared/.
+# Service layer: subfolders mirror routers (chat, documents, health, ingest, meta_ads, voice) plus shared/.

@@ -13,8 +13,8 @@ const apps = [
     href: "/amplify-chat",
   },
   {
-    name: "Experience HeyGen & ElevenLabs",
-    description: "Test video and voice integration",
+    name: "Voices",
+    description: "Bring your own voice (ElevenLabs)",
     href: "/experience-heygen-elevenlabs",
   },
 ];
