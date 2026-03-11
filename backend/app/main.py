@@ -10,7 +10,7 @@ from starlette.responses import Response
 
 from app.cors import get_allowed_origins, VERCEL_ORIGIN_REGEX
 from app.db import close_pool, init_pool
-from app.routers import chat, documents, health, ingest, meta_ads, voices, messaging, funnel, calendly, webinars, tenant, domains
+from app.routers import auth, chat, documents, health, ingest, meta_ads, voices, messaging, funnel, calendly, webinars, tenant, domains
 
 
 @asynccontextmanager
@@ -84,3 +84,4 @@ app.include_router(calendly.router, prefix="/api")
 app.include_router(webinars.router, prefix="/api")
 app.include_router(tenant.router, prefix="/api")
 app.include_router(domains.router, prefix="/api")
+app.include_router(auth.router, prefix="/api")

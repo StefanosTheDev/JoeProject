@@ -144,6 +144,13 @@ class Settings:
     vercel_team_id: str = field(
         default_factory=lambda: os.environ.get("VERCEL_TEAM_ID", "").strip()
     )
+    # Supabase Auth (MVP auth lab)
+    supabase_url: str = field(
+        default_factory=lambda: os.environ.get("SUPABASE_URL", "").strip()
+    )
+    supabase_jwt_secret: str = field(
+        default_factory=lambda: os.environ.get("SUPABASE_JWT_SECRET", "").strip()
+    )
 
     @property
     def google_service_account_path(self) -> Path:

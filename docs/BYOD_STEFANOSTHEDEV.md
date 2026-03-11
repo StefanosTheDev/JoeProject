@@ -34,11 +34,17 @@ Domain in the account is not enough; it must be assigned to the project that ser
 
 ## Step 2: Run the migration (once per environment)
 
+**Important:** Run this against the **same** database your production backend uses (e.g. Railway’s `DATABASE_URL`). If you only run it locally, production will hit `relation "custom_domains" does not exist` and return 500 (and the browser may show CORS errors). See [BYOD_TROUBLESHOOTING.md](BYOD_TROUBLESHOOTING.md) if you see that in Railway logs.
+
 From your machine (or wherever you run DB commands):
 
 ```bash
 cd backend
-psql $DATABASE_URL -f app/sql/migrations/add_custom_domains.sql
+source venv/bin/activate   # so asyncpg etc. are available
+# Use .env (local) or set DATABASE_URL to prod: DATABASE_URL=$DATABASE_URL_PROD
+python scripts/run_custom_domains_migration.py
+# Or with psql:
+psql "$DATABASE_URL" -f app/sql/migrations/add_custom_domains.sql
 ```
 
 If you use Supabase, run the same SQL in the Supabase SQL editor (paste the contents of `backend/app/sql/migrations/add_custom_domains.sql`).

@@ -2,6 +2,9 @@ import { Routes, Route } from "react-router-dom";
 import { TenantProvider } from "@/apps/tenant/TenantContext";
 import RootSwitch from "@/apps/RootSwitch";
 import LoginPage from "@/apps/auth/LoginPage";
+import SignupPage from "@/apps/auth/SignupPage";
+import RequireAuth from "@/apps/auth/RequireAuth";
+import AuthLabPage from "@/apps/auth/AuthLabPage";
 import OnboardingChat from "@/apps/amplify-os/OnboardingChat";
 import MarketingBlueprint from "@/apps/amplify-os/MarketingBlueprint";
 import ContentStudio from "@/apps/amplify-os/ContentStudio";
@@ -19,6 +22,8 @@ export default function App() {
     <Routes>
       <Route path="/" element={<RootSwitch />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
+      <Route path="/auth-lab" element={<RequireAuth><AuthLabPage /></RequireAuth>} />
       <Route path="/amplify-os" element={<OnboardingChat />} />
       <Route path="/amplify-os/blueprint" element={<MarketingBlueprint />} />
       <Route path="/amplify-os/content-studio" element={<ContentStudio />} />
