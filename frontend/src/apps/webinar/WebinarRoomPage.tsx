@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
+import { getApiBase } from "@/lib/utils";
 
 interface Session {
   id: string;
@@ -30,7 +31,7 @@ export default function WebinarRoomPage() {
   useEffect(() => {
     if (!sessionId) return;
     let cancelled = false;
-    fetch(`/api/webinars/sessions/${sessionId}`)
+    fetch(`${getApiBase()}/api/webinars/sessions/${sessionId}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!cancelled && data) setSession(data);
@@ -46,7 +47,7 @@ export default function WebinarRoomPage() {
   useEffect(() => {
     if (!sessionId || !session?.mux_playback_id) return;
     let cancelled = false;
-    fetch(`/api/webinars/sessions/${sessionId}/playback-url`)
+    fetch(`${getApiBase()}/api/webinars/sessions/${sessionId}/playback-url`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!cancelled && data) setPlayback(data);

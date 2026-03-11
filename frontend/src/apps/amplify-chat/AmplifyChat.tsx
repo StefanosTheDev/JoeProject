@@ -2,6 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useState, useCallback, useMemo } from "react";
 import { useTheme } from "@/components/ThemeProvider";
+import { getApiBase } from "@/lib/utils";
 import Sidebar, { type Conversation } from "./components/Sidebar";
 import ChatMessages from "./components/ChatMessages";
 import ChatInput from "./components/ChatInput";
@@ -37,8 +38,8 @@ export default function AmplifyChat() {
   const { dark, toggleTheme } = useTheme();
 
   const chatApiUrl = useMemo(() => {
-    const base = import.meta.env.VITE_API_URL;
-    return base ? `${String(base).replace(/\/$/, "")}/api/chat` : "/api/chat";
+    const base = getApiBase();
+    return base ? `${base}/api/chat` : "/api/chat";
   }, []);
   const transport = useMemo(() => new DefaultChatTransport({ api: chatApiUrl }), [chatApiUrl]);
   const { messages, setMessages, sendMessage, status } = useChat({

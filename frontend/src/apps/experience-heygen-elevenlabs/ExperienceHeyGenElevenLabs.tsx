@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/components/ThemeProvider";
+import { getApiBase } from "@/lib/utils";
 
-const API_BASE = "/api/voices";
+const getVoicesApiBase = () => `${getApiBase()}/api/voices`;
 
 interface VoiceItem {
   voice_id: string;
@@ -38,7 +39,7 @@ export default function VoicesPage() {
     setVoicesLoading(true);
     setVoicesError(null);
     try {
-      const r = await fetch(`${API_BASE}/elevenlabs`);
+      const r = await fetch(`${getVoicesApiBase()}/elevenlabs`);
       const data: VoiceListRes = await r.json();
       if (data.ok) setVoices(data.voices);
       else setVoicesError(data.error || "Failed");
@@ -53,7 +54,7 @@ export default function VoicesPage() {
     if (!firmId.trim()) return;
     setFirmVoicesLoading(true);
     try {
-      const r = await fetch(`${API_BASE}/firm?firm_id=${encodeURIComponent(firmId.trim())}`);
+      const r = await fetch(`${getVoicesApiBase()}/firm?firm_id=${encodeURIComponent(firmId.trim())}`);
       const data: VoiceListRes = await r.json();
       if (data.ok && Array.isArray(data.voices)) setFirmVoices(data.voices);
       else setFirmVoices([]);
@@ -73,7 +74,7 @@ export default function VoicesPage() {
       form.append("firm_id", firmId.trim());
       form.append("name", createVoiceName.trim());
       form.append("file", createVoiceFile);
-      const r = await fetch(`${API_BASE}/`, { method: "POST", body: form });
+      const r = await fetch(`${getVoicesApiBase()}/`, { method: "POST", body: form });
       const data = await r.json();
       setCreateVoiceResult(data);
     } catch (e) {
@@ -90,7 +91,7 @@ export default function VoicesPage() {
     setPreviewAudioUrl(null);
     try {
       const r = await fetch(
-        `${API_BASE}/preview?voice_id=${encodeURIComponent(previewVoiceId.trim())}&text=${encodeURIComponent(previewText.trim())}`
+        `${getVoicesApiBase()}/preview?voice_id=${encodeURIComponent(previewVoiceId.trim())}&text=${encodeURIComponent(previewText.trim())}`
       );
       const data = await r.json();
       if (data.ok && data.audio_url) setPreviewAudioUrl(data.audio_url);

@@ -1,4 +1,6 @@
-const API = "/api";
+import { getApiBase } from "@/lib/utils";
+
+const API = `${getApiBase()}/api`;
 
 export interface TenantResolveResponse {
   firm_id: string;

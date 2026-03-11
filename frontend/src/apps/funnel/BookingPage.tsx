@@ -3,6 +3,7 @@ import { useTenantFirmCampaign } from "@/apps/tenant/TenantContext";
 import { fetchFunnelContent } from "./api";
 import type { FunnelContent } from "./api";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { getApiBase } from "@/lib/utils";
 
 const defaultFirmId = import.meta.env.VITE_DEFAULT_FIRM_ID ?? "default";
 const defaultCampaignId = import.meta.env.VITE_DEFAULT_CAMPAIGN_ID ?? "default";
@@ -41,7 +42,7 @@ export default function BookingPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/calendly/event-types?firm_id=${encodeURIComponent(firmId)}`)
+    fetch(`${getApiBase()}/api/calendly/event-types?firm_id=${encodeURIComponent(firmId)}`)
       .then((r) => (r.ok ? r.json() : { event_types: [] }))
       .then((data: { event_types?: (CalendlyEventType | { resource?: CalendlyEventType })[] }) => {
         if (cancelled) return;

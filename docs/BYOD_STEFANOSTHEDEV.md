@@ -80,10 +80,14 @@ Your API must allow requests from the new origin.
 
 ## Step 5: Point frontend to the backend in production
 
-The funnel calls `/api/...`. In production the frontend is on Vercel; those requests must hit your real API.
+The funnel and webinar pages call `/api/...`. On Vercel, every path is served the SPA (`index.html`), so relative `/api/...` requests would return HTML and break (e.g. "Unexpected token '<'" when loading the webinar). The app uses **`VITE_API_URL`** so those calls go to your real backend.
 
-- If you use **Vercel rewrites** to proxy `/api` to your backend, set that in `frontend/vercel.json` (or in the Vercel project) so that when someone visits `https://go.stefanosthedev.com/api/...` it goes to your API URL.
-- If the frontend calls the API by **absolute URL**, set `VITE_API_URL` in the **frontend** project (Vercel) to your backend base URL (e.g. `https://your-api.railway.app`). Rebuild/redeploy after changing env.
+1. In **Vercel** → your **frontend** project → **Settings → Environment Variables** add:
+   - **Name:** `VITE_API_URL`
+   - **Value:** your backend base URL, e.g. `https://your-app.railway.app` (no trailing slash).
+2. **Redeploy** the frontend (or trigger a new deployment) so the env is picked up.
+
+After this, requests from `https://go.stefanosthedev.com` will go to `https://your-app.railway.app/api/...` and return JSON instead of HTML.
 
 ---
 

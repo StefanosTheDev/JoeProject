@@ -1,4 +1,6 @@
-const API = "/api";
+import { getApiBase } from "@/lib/utils";
+
+const API = `${getApiBase()}/api`;
 
 export async function fetchCampaignIdBySlug(firmId: string, slug: string): Promise<string> {
   const r = await fetch(
