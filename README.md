@@ -78,6 +78,17 @@ The Vite dev server proxies `/api/*` requests to `http://localhost:8000`.
 |---|---|
 | `VITE_API_URL` | Backend base URL (e.g. `https://your-api.railway.app`) so chat calls the deployed API |
 
+## Bring your own domain (BYOD)
+
+To run the funnel on a client’s custom domain (e.g. `go.client.com`), see [docs/BYOD.md](docs/BYOD.md): migration, Vercel domain setup, and seed script for testing.
+
+## Process flow and webinar simulation
+
+For the prospect flow (ad → registration → thank-you → book) and how to simulate the **Mux webinar** room (countdown, video, chat), see:
+
+- [Process flow and advisor setup](docs/PROCESS_FLOW_AND_SETUP.md) — End-to-end flow and Zoom/Calendly note (we do not use the Zoom API; advisor connects Zoom in Calendly).
+- [Plan: Process flow and Mux webinar](docs/PLAN_PROCESS_FLOW_AND_MUX_WEBINAR.md) — Step-by-step simulation, including creating a webinar session via the seed script (`backend/scripts/seed_webinar_session.py`) and using `?simulate=1` on the webinar room URL for instant playback in demos.
+
 ## Tech Stack
 
 - **Backend**: FastAPI, asyncpg, pgvector, Anthropic Python SDK
