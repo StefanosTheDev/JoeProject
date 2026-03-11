@@ -4,8 +4,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 
 from app.config import settings
+from app.cors import get_allowed_origins
 from app.db import close_pool, init_pool
 from app.routers import chat, documents, health, ingest, meta_ads, voices, messaging, funnel, calendly, webinars, tenant, domains
 
@@ -26,10 +30,36 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Amplify Advisors API", lifespan=lifespan)
 
+# Dynamic CORS: allow origins from CORS_ORIGINS env + verified custom_domains (BYOD). Runs first.
+class DynamicCORSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        origin = request.headers.get("origin")
+        if origin:
+            allowed = await get_allowed_origins()
+            if origin in allowed:
+                if request.method == "OPTIONS":
+                    return Response(
+                        status_code=200,
+                        headers={
+                            "Access-Control-Allow-Origin": origin,
+                            "Access-Control-Allow-Credentials": "true",
+                            "Access-Control-Allow-Methods": "*",
+                            "Access-Control-Allow-Headers": "*",
+                            "Access-Control-Max-Age": "86400",
+                        },
+                    )
+                response = await call_next(request)
+                response.headers["Access-Control-Allow-Origin"] = origin
+                response.headers["Access-Control-Allow-Credentials"] = "true"
+                return response
+        return await call_next(request)
+
+
 allow_origin_regex = None
 if any("vercel.app" in o for o in settings.cors_origins):
     allow_origin_regex = r"https://.*\.vercel\.app"
 
+app.add_middleware(DynamicCORSMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,

@@ -6,6 +6,7 @@ import logging
 from fastapi import APIRouter, HTTPException, Query
 
 from app import db
+from app.cors import invalidate_cors_cache
 from app.models.domains_models import ConnectDomainRequest
 from app.services.vercel_domains import (
     add_domain_to_project,
@@ -123,6 +124,8 @@ async def verify_domain(hostname: str = Query(..., description="Hostname to veri
             """,
             hostname,
         )
+
+    invalidate_cors_cache()
 
     return {
         "status": "verified",

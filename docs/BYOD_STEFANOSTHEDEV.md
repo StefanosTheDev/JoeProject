@@ -64,17 +64,13 @@ python3 scripts/seed_custom_domain.py go.stefanosthedev.com default
 
 ## Step 4: Allow the domain in the backend (CORS)
 
-Your API must allow requests from the new origin.
+The backend **automatically allows CORS** for every **verified** custom domain (from the `custom_domains` table). When you verify a domain (Step 1 or 3), that origin is allowed within about a minute (or immediately after the next request). You do **not** need to add each client domain to Railway env.
 
-- **Local backend:** In `backend/.env`, set:
+- **Static origins:** Keep `CORS_ORIGINS` for your own fixed origins (e.g. local dev, main Vercel URL):
   ```env
-  CORS_ORIGINS=http://localhost:5173,https://go.stefanosthedev.com
+  CORS_ORIGINS=http://localhost:5173,https://your-vercel-app.vercel.app
   ```
-- **Deployed backend (e.g. Railway):** In the backend’s env vars, add the same origin to `CORS_ORIGINS`, e.g.:
-  ```env
-  CORS_ORIGINS=https://your-vercel-app.vercel.app,https://go.stefanosthedev.com
-  ```
-  Then redeploy the backend.
+- **Custom domains:** No need to add `https://go.stefanosthedev.com` (or other BYOD domains) to `CORS_ORIGINS`; they are added automatically when the domain is verified.
 
 ---
 
