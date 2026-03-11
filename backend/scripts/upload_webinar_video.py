@@ -16,7 +16,8 @@ backend_dir = Path(__file__).resolve().parent.parent
 os.chdir(backend_dir)
 sys.path.insert(0, str(backend_dir))
 
-# Load .env
+# Load .env without overriding variables already exported in the shell.
+# This lets us run against prod DB with: DATABASE_URL=$DATABASE_URL_PROD ...
 env_path = backend_dir / ".env"
 if env_path.exists():
     for line in env_path.read_text().splitlines():
@@ -25,7 +26,7 @@ if env_path.exists():
             k, _, v = line.partition("=")
             k = k.strip()
             v = v.strip().strip('"').strip("'")
-            os.environ[k] = v
+            os.environ.setdefault(k, v)
 
 
 async def main():
