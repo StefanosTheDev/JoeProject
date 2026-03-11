@@ -4,8 +4,8 @@ from __future__ import annotations
 import time
 from typing import List
 
+from app import db
 from app.config import settings
-from app.db import pool
 
 _CACHE_TTL_SEC = 60
 _cached_origins: List[str] | None = None
@@ -38,12 +38,12 @@ async def get_allowed_origins() -> List[str]:
     if _cached_origins is not None and (now - _cached_at) < _CACHE_TTL_SEC:
         return _cached_origins
     static = _static_origins()
-    if pool is None:
+    if db.pool is None:
         _cached_origins = static
         _cached_at = now
         return static
     try:
-        async with pool.acquire() as conn:
+        async with db.pool.acquire() as conn:
             rows = await conn.fetch(
                 "SELECT hostname FROM custom_domains WHERE status = 'verified'"
             )
