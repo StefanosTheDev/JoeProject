@@ -3,6 +3,8 @@ import { TenantProvider } from "@/apps/tenant/TenantContext";
 import RootSwitch from "@/apps/RootSwitch";
 import LoginPage from "@/apps/auth/LoginPage";
 import OnboardingChat from "@/apps/amplify-os/OnboardingChat";
+import MarketingBlueprint from "@/apps/amplify-os/MarketingBlueprint";
+import ContentStudio from "@/apps/amplify-os/ContentStudio";
 import AmplifyChat from "@/apps/amplify-chat/AmplifyChat";
 import ExperienceHeyGenElevenLabs from "@/apps/experience-heygen-elevenlabs/ExperienceHeyGenElevenLabs";
 import ConversationsInbox from "@/apps/conversations/ConversationsInbox";
@@ -18,6 +20,8 @@ export default function App() {
       <Route path="/" element={<RootSwitch />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/amplify-os" element={<OnboardingChat />} />
+      <Route path="/amplify-os/blueprint" element={<MarketingBlueprint />} />
+      <Route path="/amplify-os/content-studio" element={<ContentStudio />} />
       <Route path="/amplify-chat" element={<AmplifyChat />} />
       <Route path="/conversations" element={<ConversationsInbox />} />
       <Route path="/funnel/register" element={<RegistrationPage />} />
