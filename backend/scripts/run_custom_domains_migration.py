@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Run add_custom_domains.sql migration. Loads DATABASE_URL from backend/.env."""
+"""Run add_custom_domains.sql migration. Loads DATABASE_URL from backend/.env.
+
+For PRODUCTION (e.g. Railway): run with prod DATABASE_URL so the table exists there:
+  DATABASE_URL='postgresql://...' python3 scripts/run_custom_domains_migration.py
+If you see UndefinedTableError "custom_domains" in Railway logs, this migration
+was not run on the DB that Railway uses. See docs/BYOD_TROUBLESHOOTING.md.
+"""
 import os
 import sys
 from pathlib import Path
