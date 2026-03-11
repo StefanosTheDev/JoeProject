@@ -33,9 +33,14 @@ class FunnelSubmitResponse(BaseModel):
 
 
 class FunnelContentResponse(BaseModel):
-    """Funnel page copy (from funnel_pages or campaign)."""
+    """Funnel page copy (from funnel_pages or campaign). GHL-style optional blocks in content."""
     headline: str | None = None
     subheadline: str | None = None
     cta_text: str | None = None
     body: str | None = None
+    hero_image_url: str | None = None
+    logo_url: str | None = None
+    bullets: list[str] = Field(default_factory=list)
+    video_embed_url: str | None = None
+    secondary_cta_text: str | None = None
     content: dict[str, Any] = Field(default_factory=dict)

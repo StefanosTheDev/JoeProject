@@ -129,6 +129,21 @@ class Settings:
     messaging_default_firm_id: str = field(
         default_factory=lambda: os.environ.get("MESSAGING_DEFAULT_FIRM_ID", "").strip()
     )
+    # BYOD: base domain for platform subdomains (e.g. yourplatform.com). If set,
+    # host advisor1.yourplatform.com resolves to firm_id=advisor1.
+    platform_base_domain: str = field(
+        default_factory=lambda: os.environ.get("PLATFORM_BASE_DOMAIN", "").strip()
+    )
+    # BYOD: Vercel API to add/verify custom domains programmatically.
+    vercel_api_token: str = field(
+        default_factory=lambda: os.environ.get("VERCEL_API_TOKEN", "").strip()
+    )
+    vercel_project_id: str = field(
+        default_factory=lambda: os.environ.get("VERCEL_PROJECT_ID", "").strip()
+    )
+    vercel_team_id: str = field(
+        default_factory=lambda: os.environ.get("VERCEL_TEAM_ID", "").strip()
+    )
 
     @property
     def google_service_account_path(self) -> Path:

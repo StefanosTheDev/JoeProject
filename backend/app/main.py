@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.db import close_pool, init_pool
-from app.routers import chat, documents, health, ingest, meta_ads, voices, messaging, funnel, calendly, webinars
+from app.routers import chat, documents, health, ingest, meta_ads, voices, messaging, funnel, calendly, webinars, tenant, domains
 
 
 @asynccontextmanager
@@ -49,3 +49,5 @@ app.include_router(messaging.router, prefix="/api")
 app.include_router(funnel.router, prefix="/api")
 app.include_router(calendly.router, prefix="/api")
 app.include_router(webinars.router, prefix="/api")
+app.include_router(tenant.router, prefix="/api")
+app.include_router(domains.router, prefix="/api")

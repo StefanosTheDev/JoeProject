@@ -78,6 +78,10 @@ The Vite dev server proxies `/api/*` requests to `http://localhost:8000`.
 |---|---|
 | `VITE_API_URL` | Backend base URL (e.g. `https://your-api.railway.app`) so chat calls the deployed API |
 
+## Bring your own domain (BYOD)
+
+To run the funnel on a client’s custom domain (e.g. `go.client.com`), see [docs/BYOD.md](docs/BYOD.md): migration, Vercel domain setup, and seed script for testing.
+
 ## Process flow and webinar simulation
 
 For the prospect flow (ad → registration → thank-you → book) and how to simulate the **Mux webinar** room (countdown, video, chat), see:

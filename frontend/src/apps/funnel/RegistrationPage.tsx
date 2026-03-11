@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
-import { fetchFunnelContent, submitFunnelForm } from "./api";
+import { useSearchParams, useParams } from "react-router-dom";
+import { useTenant, useTenantFirmCampaign } from "@/apps/tenant/TenantContext";
+import { fetchFunnelContent, fetchCampaignIdBySlug, submitFunnelForm } from "./api";
 import type { FunnelContent } from "./api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +12,14 @@ const defaultFirmId = import.meta.env.VITE_DEFAULT_FIRM_ID ?? "default";
 const defaultCampaignId = import.meta.env.VITE_DEFAULT_CAMPAIGN_ID ?? "default";
 
 export default function RegistrationPage() {
+  const { eventSlug } = useParams<{ eventSlug?: string }>();
+  const { firmId: tenantFirmId, campaignId: tenantCampaignId, baseUrl } = useTenantFirmCampaign(defaultFirmId, defaultCampaignId);
+  const tenant = useTenant();
   const [searchParams] = useSearchParams();
-  const firmId = searchParams.get("firm_id") ?? defaultFirmId;
-  const campaignId = searchParams.get("campaign_id") ?? defaultCampaignId;
+  const [slugCampaignId, setSlugCampaignId] = useState<string | null>(null);
+  const [slugCampaignError, setSlugCampaignError] = useState<string | null>(null);
+  const firmId = tenantFirmId;
+  const campaignId = slugCampaignId ?? tenantCampaignId;
 
   const [content, setContent] = useState<FunnelContent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,6 +36,29 @@ export default function RegistrationPage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+
+  useEffect(() => {
+    if (!eventSlug || !firmId) {
+      setSlugCampaignId(null);
+      setSlugCampaignError(null);
+      return;
+    }
+    let cancelled = false;
+    setSlugCampaignError(null);
+    fetchCampaignIdBySlug(firmId, eventSlug)
+      .then((id) => {
+        if (!cancelled) setSlugCampaignId(id);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setSlugCampaignId(null);
+          setSlugCampaignError(e instanceof Error ? e.message : "Campaign not found");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [eventSlug, firmId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,6 +113,38 @@ export default function RegistrationPage() {
     }
   };
 
+  if (tenant.isLoading && !tenant.firmId && !searchParams.get("firm_id")) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
+
+  if (tenant.error && !searchParams.get("firm_id")) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <p className="text-destructive">Unknown host. Use ?firm_id=... and ?campaign_id=... to access this page.</p>
+      </div>
+    );
+  }
+
+  if (eventSlug && slugCampaignError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <p className="text-destructive">Campaign not found for this event.</p>
+      </div>
+    );
+  }
+
+  if (eventSlug && slugCampaignId === null && !slugCampaignError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -130,7 +191,7 @@ export default function RegistrationPage() {
               </div>
             )}
             <Button asChild className="w-full">
-              <a href={`/funnel/thank-you?firm_id=${firmId}&campaign_id=${campaignId}`}>
+              <a href={`${baseUrl}/funnel/thank-you?firm_id=${firmId}&campaign_id=${campaignId}`}>
                 Continue to next step
               </a>
             </Button>
@@ -140,9 +201,21 @@ export default function RegistrationPage() {
     );
   }
 
+  const bullets = content?.bullets ?? [];
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
-      <Card className="max-w-md w-full">
+      <Card className="max-w-md w-full overflow-hidden">
+        {content?.logo_url && (
+          <div className="p-4 pb-0 flex justify-center">
+            <img src={content.logo_url} alt="" className="max-h-12 w-auto object-contain" />
+          </div>
+        )}
+        {content?.hero_image_url && (
+          <div className="aspect-video w-full bg-muted">
+            <img src={content.hero_image_url} alt="" className="w-full h-full object-cover" />
+          </div>
+        )}
         <CardHeader>
           <h1 className="text-2xl font-semibold">
             {content?.headline ?? "Register for your free session"}
@@ -151,7 +224,28 @@ export default function RegistrationPage() {
             <p className="text-muted-foreground">{content.subheadline}</p>
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {bullets.length > 0 && (
+            <ul className="list-disc list-inside space-y-1 text-muted-foreground text-sm">
+              {bullets.map((b, i) => (
+                <li key={i}>{b}</li>
+              ))}
+            </ul>
+          )}
+          {content?.body && (
+            <p className="text-muted-foreground text-sm whitespace-pre-wrap">{content.body}</p>
+          )}
+          {content?.video_embed_url && (
+            <div className="aspect-video w-full rounded-lg overflow-hidden bg-muted">
+              <iframe
+                src={content.video_embed_url}
+                title="Video"
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -205,6 +299,9 @@ export default function RegistrationPage() {
               {submitLoading ? "Submitting…" : (content?.cta_text ?? "Register")}
             </Button>
           </form>
+          {content?.secondary_cta_text && (
+            <p className="text-center text-sm text-muted-foreground">{content.secondary_cta_text}</p>
+          )}
         </CardContent>
       </Card>
     </div>

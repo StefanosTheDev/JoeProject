@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useTenantFirmCampaign } from "@/apps/tenant/TenantContext";
 import { fetchFunnelContent } from "./api";
 import type { FunnelContent } from "./api";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -17,9 +17,7 @@ interface CalendlyEventType {
 }
 
 export default function BookingPage() {
-  const [searchParams] = useSearchParams();
-  const firmId = searchParams.get("firm_id") ?? defaultFirmId;
-  const campaignId = searchParams.get("campaign_id") ?? defaultCampaignId;
+  const { firmId, campaignId } = useTenantFirmCampaign(defaultFirmId, defaultCampaignId);
 
   const [content, setContent] = useState<FunnelContent | null>(null);
   const [loading, setLoading] = useState(true);

@@ -1,10 +1,24 @@
 const API = "/api";
 
+export async function fetchCampaignIdBySlug(firmId: string, slug: string): Promise<string> {
+  const r = await fetch(
+    `${API}/funnel/campaign-by-slug?firm_id=${encodeURIComponent(firmId)}&slug=${encodeURIComponent(slug)}`
+  );
+  if (!r.ok) throw new Error("Campaign not found for this slug");
+  const data = await r.json();
+  return data.campaign_id;
+}
+
 export interface FunnelContent {
   headline: string | null;
   subheadline: string | null;
   cta_text: string | null;
   body: string | null;
+  hero_image_url?: string | null;
+  logo_url?: string | null;
+  bullets?: string[];
+  video_embed_url?: string | null;
+  secondary_cta_text?: string | null;
   content: Record<string, unknown>;
 }
 

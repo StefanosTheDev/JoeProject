@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useTenantFirmCampaign } from "@/apps/tenant/TenantContext";
 import { fetchFunnelContent } from "./api";
 import type { FunnelContent } from "./api";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,7 @@ const defaultFirmId = import.meta.env.VITE_DEFAULT_FIRM_ID ?? "default";
 const defaultCampaignId = import.meta.env.VITE_DEFAULT_CAMPAIGN_ID ?? "default";
 
 export default function ThankYouPage() {
-  const [searchParams] = useSearchParams();
-  const firmId = searchParams.get("firm_id") ?? defaultFirmId;
-  const campaignId = searchParams.get("campaign_id") ?? defaultCampaignId;
+  const { firmId, campaignId, baseUrl } = useTenantFirmCampaign(defaultFirmId, defaultCampaignId);
 
   const [content, setContent] = useState<FunnelContent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,9 +49,9 @@ export default function ThankYouPage() {
             Your next step is to book a call. Choose a time that works for you.
           </p>
           <Button asChild className="w-full">
-            <Link to={`/funnel/book?firm_id=${firmId}&campaign_id=${campaignId}`}>
+            <a href={`${baseUrl}/funnel/book?firm_id=${firmId}&campaign_id=${campaignId}`}>
               {content?.cta_text ?? "Book your call"}
-            </Link>
+            </a>
           </Button>
         </CardContent>
       </Card>

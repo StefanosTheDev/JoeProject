@@ -6,7 +6,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from app import db
 from app.config import settings
@@ -16,6 +16,7 @@ from app.models.funnel_models import (
     FunnelSubmitResponse,
 )
 from app.services.messaging import get_or_create_contact_by_email
+from app.services.tenant import get_request_base_url
 from app.services.meta_ads.meta_capi import send_event
 from app.services.resend import resend_send_email
 from app.services.sendblue import sendblue_send_message
@@ -26,7 +27,7 @@ router = APIRouter(prefix="/funnel", tags=["funnel"])
 
 
 @router.post("/submit", response_model=FunnelSubmitResponse)
-async def funnel_submit(body: FunnelSubmitRequest):
+async def funnel_submit(request: Request, body: FunnelSubmitRequest):
     """
     Submit funnel form (registration/landing). Creates contact, captures UTM,
     logs page_analytics, and sends Meta CAPI Lead event if firm has connection.
@@ -89,7 +90,8 @@ async def funnel_submit(body: FunnelSubmitRequest):
             if row:
                 session_id = row["id"]
                 webinar_scheduled_at = row["scheduled_at"].isoformat() if row.get("scheduled_at") else None
-                webinar_join_url = f"{settings.frontend_origin}/webinar/watch/{session_id}"
+                base_url = await get_request_base_url(request)
+                webinar_join_url = f"{base_url}/webinar/watch/{session_id}"
                 await conn.execute(
                     """
                     INSERT INTO webinar_registrations (session_id, contact_id)
@@ -162,6 +164,29 @@ async def funnel_submit(body: FunnelSubmitRequest):
     )
 
 
+@router.get("/campaign-by-slug")
+async def get_campaign_by_slug(firm_id: str, slug: str):
+    """
+    Resolve campaign_id from funnel_pages slug for registration pages.
+    Used by /register/:eventSlug to get campaign_id for a pretty URL.
+    """
+    if not db.pool:
+        raise HTTPException(503, "Database not available")
+    async with db.pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT campaign_id FROM funnel_pages
+            WHERE firm_id = $1 AND slug = $2 AND page_type = 'registration' AND is_published
+            LIMIT 1
+            """,
+            firm_id,
+            slug.strip(),
+        )
+    if not row:
+        raise HTTPException(404, "Campaign not found for this slug")
+    return {"campaign_id": row["campaign_id"]}
+
+
 @router.get("/content", response_model=FunnelContentResponse)
 async def get_funnel_content(
     firm_id: str,
@@ -187,11 +212,18 @@ async def get_funnel_content(
         )
         if row and row.get("content"):
             c = row["content"] if isinstance(row["content"], dict) else {}
+            raw_bullets = c.get("bullets")
+            bullets = [b for b in (raw_bullets or []) if isinstance(b, str)] if isinstance(raw_bullets, (list, tuple)) else []
             return FunnelContentResponse(
                 headline=c.get("headline"),
                 subheadline=c.get("subheadline"),
                 cta_text=c.get("cta_text"),
                 body=c.get("body"),
+                hero_image_url=c.get("hero_image_url"),
+                logo_url=c.get("logo_url"),
+                bullets=bullets,
+                video_embed_url=c.get("video_embed_url"),
+                secondary_cta_text=c.get("secondary_cta_text"),
                 content=c,
             )
         # Placeholder
