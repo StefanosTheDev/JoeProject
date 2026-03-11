@@ -15,6 +15,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-b from-muted/30 to-background px-4">
       <main className="max-w-xl w-full text-center space-y-8">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">Funnel landing · CTA</p>
         <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
           Reserve your spot
         </h1>

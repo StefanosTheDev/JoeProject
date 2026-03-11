@@ -206,6 +206,7 @@ export default function RegistrationPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
       <Card className="max-w-md w-full overflow-hidden">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground px-6 pt-4">Funnel · Register</p>
         {content?.logo_url && (
           <div className="p-4 pb-0 flex justify-center">
             <img src={content.logo_url} alt="" className="max-h-12 w-auto object-contain" />

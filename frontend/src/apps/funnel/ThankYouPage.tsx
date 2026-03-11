@@ -36,6 +36,7 @@ export default function ThankYouPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
       <Card className="max-w-lg w-full">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground px-6 pt-4">Funnel · Thank you</p>
         <CardHeader>
           <h1 className="text-2xl font-semibold">
             {content?.headline ?? "Thank you"}

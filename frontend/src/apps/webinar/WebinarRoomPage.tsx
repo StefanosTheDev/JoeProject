@@ -89,6 +89,7 @@ export default function WebinarRoomPage() {
     <div className="min-h-screen flex bg-background">
       <div className="flex-1 flex flex-col min-w-0">
         <div className="p-4 border-b">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Funnel · Webinar</p>
           <h1 className="font-semibold text-lg">Webinar</h1>
           <p className="text-sm text-muted-foreground">
             {session.scheduled_at

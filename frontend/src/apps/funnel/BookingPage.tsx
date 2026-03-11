@@ -84,6 +84,7 @@ export default function BookingPage() {
     <div className="min-h-screen p-4 bg-muted/30">
       <div className="max-w-4xl mx-auto">
         <Card>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground px-6 pt-4">Funnel · Book</p>
           <CardHeader>
             <h1 className="text-2xl font-semibold">
               {content?.headline ?? "Book your call"}
