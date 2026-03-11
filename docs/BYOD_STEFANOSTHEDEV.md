@@ -70,7 +70,7 @@ The backend **automatically allows CORS** for every **verified** custom domain (
   ```env
   CORS_ORIGINS=http://localhost:5173,https://your-vercel-app.vercel.app
   ```
-- **Custom domains:** No need to add `https://go.stefanosthedev.com` (or other BYOD domains) to `CORS_ORIGINS`; they are added automatically when the domain is verified.
+- **Custom domains:** Do **not** add client domains (e.g. `https://go.stefanosthedev.com`) to `CORS_ORIGINS`. They are allowed automatically from the database when verified — no local or production env change needed, so this scales for many clients.
 
 ---
 

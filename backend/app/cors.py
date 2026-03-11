@@ -1,4 +1,4 @@
-"""Dynamic CORS: allow origins from env plus verified custom_domains (BYOD)."""
+"""Dynamic CORS: allow origins from env plus verified custom_domains (BYOD). Scales for multiple clients."""
 from __future__ import annotations
 
 import time
@@ -11,6 +11,9 @@ _CACHE_TTL_SEC = 60
 _cached_origins: List[str] | None = None
 _cached_at: float = 0
 
+# Vercel preview URLs (e.g. joe-project-xxx.vercel.app) — allowed without adding to DB
+VERCEL_ORIGIN_REGEX = r"^https://[a-zA-Z0-9-]+\.vercel\.app$"
+
 
 def invalidate_cors_cache() -> None:
     """Call after verifying a custom domain so the new origin is allowed on the next request."""
@@ -20,11 +23,16 @@ def invalidate_cors_cache() -> None:
 
 
 def _static_origins() -> List[str]:
+    """Only your own fixed origins (localhost, main app URL). Do not add client BYOD domains here."""
     return [o.strip() for o in settings.cors_origins if o.strip()]
 
 
 async def get_allowed_origins() -> List[str]:
-    """Origins from CORS_ORIGINS env plus https:// for each verified custom_domains hostname. Cached 60s."""
+    """
+    Allowed origins: CORS_ORIGINS (env) + every verified custom_domains hostname (http + https).
+    Client domains are added automatically from the DB — no need to add them to env.
+    Cached 60s; invalidated when a domain is verified.
+    """
     global _cached_origins, _cached_at
     now = time.monotonic()
     if _cached_origins is not None and (now - _cached_at) < _CACHE_TTL_SEC:
@@ -39,7 +47,13 @@ async def get_allowed_origins() -> List[str]:
             rows = await conn.fetch(
                 "SELECT hostname FROM custom_domains WHERE status = 'verified'"
             )
-        from_db = [f"https://{r['hostname']}" for r in rows]
+        # Allow both http and https for each verified hostname (dev and prod)
+        from_db: List[str] = []
+        for r in rows:
+            h = (r["hostname"] or "").strip()
+            if h:
+                from_db.append(f"https://{h}")
+                from_db.append(f"http://{h}")
         combined = list(dict.fromkeys(static + from_db))
         _cached_origins = combined
         _cached_at = now
