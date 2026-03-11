@@ -51,10 +51,23 @@ class DynamicCORSMiddleware(BaseHTTPMiddleware):
                     "Access-Control-Max-Age": "86400",
                 },
             )
-        response = await call_next(request)
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        return response
+        cors_headers = {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+        }
+        try:
+            response = await call_next(request)
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            return response
+        except Exception:
+            # Route raised (e.g. 500); still send CORS so browser doesn't report CORS error
+            return Response(
+                status_code=500,
+                content='{"detail":"Internal server error"}',
+                media_type="application/json",
+                headers=cors_headers,
+            )
 
 
 app.add_middleware(DynamicCORSMiddleware)
