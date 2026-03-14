@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../../components/ThemeProvider";
 
 interface ChatMessage {
   sender: "user" | "ai";
@@ -174,6 +175,7 @@ const outcomeColors = [
 
 export default function MarketingBlueprint(): React.JSX.Element {
   const navigate = useNavigate();
+  const { dark, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<TabId>("icp");
   const [expandedAngle, setExpandedAngle] = useState<number | null>(null);
   const [expandedPain, setExpandedPain] = useState<number | null>(null);
@@ -183,6 +185,8 @@ export default function MarketingBlueprint(): React.JSX.Element {
   ]);
   const [chatInput, setChatInput] = useState("");
   const [aiThinking, setAiThinking] = useState(false);
+  const [showApproval, setShowApproval] = useState(false);
+  const [approvalStage, setApprovalStage] = useState<"checking" | "approved" | "done">("checking");
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
   // ─── Live blueprint state ───
@@ -196,6 +200,21 @@ export default function MarketingBlueprint(): React.JSX.Element {
   const [editGeo, setEditGeo] = useState(mockData.targeting.geo);
   const [editGeoSecondary, setEditGeoSecondary] = useState(mockData.targeting.geoSecondary);
   const [editCompliance, setEditCompliance] = useState<BlueprintData["complianceLevel"]>(mockData.complianceLevel);
+
+  // ─── Revenue model state ───
+  type RevenueModel = "aum" | "annuities" | "fee-based" | "hybrid";
+  const [revenueModel, setRevenueModel] = useState<RevenueModel>("aum");
+  const [revSplitAUM, setRevSplitAUM] = useState(100);
+  const [revSplitAnnuities, setRevSplitAnnuities] = useState(0);
+  const [revSplitFee, setRevSplitFee] = useState(0);
+
+  function applyRevenuePreset(model: RevenueModel) {
+    setRevenueModel(model);
+    if (model === "aum") { setRevSplitAUM(100); setRevSplitAnnuities(0); setRevSplitFee(0); }
+    else if (model === "annuities") { setRevSplitAUM(0); setRevSplitAnnuities(100); setRevSplitFee(0); }
+    else if (model === "fee-based") { setRevSplitAUM(0); setRevSplitAnnuities(0); setRevSplitFee(100); }
+    else { setRevSplitAUM(50); setRevSplitAnnuities(30); setRevSplitFee(20); }
+  }
 
   const d = { ...mockData, angles };
 
@@ -294,6 +313,14 @@ export default function MarketingBlueprint(): React.JSX.Element {
     }
   }
 
+  function handleApprove() {
+    setShowApproval(true);
+    setApprovalStage("checking");
+    setTimeout(() => setApprovalStage("approved"), 2200);
+    setTimeout(() => setApprovalStage("done"), 3800);
+    setTimeout(() => navigate("/amplify-os/content-studio"), 5200);
+  }
+
   const tabs: Tab[] = [
     { id: "icp", label: "ICP Profile" },
     { id: "pain", label: "Pain Points" },
@@ -308,20 +335,20 @@ export default function MarketingBlueprint(): React.JSX.Element {
       <style>{`
         .bp-root {
           min-height: 100vh;
-          background: #0a0a0a;
-          color: #ededed;
+          background: var(--app-bg);
+          color: var(--app-text);
           font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
           -webkit-font-smoothing: antialiased;
         }
 
         /* ── Header ── */
         .bp-header {
-          border-bottom: 1px solid #1f1f1f;
+          border-bottom: 1px solid var(--app-border);
           padding: 16px 32px;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          background: #0a0a0a;
+          background: var(--app-bg);
           position: sticky;
           top: 0;
           z-index: 10;
@@ -335,8 +362,8 @@ export default function MarketingBlueprint(): React.JSX.Element {
           width: 28px;
           height: 28px;
           border-radius: 6px;
-          background: #ededed;
-          color: #0a0a0a;
+          background: var(--app-text);
+          color: var(--app-bg);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -349,7 +376,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
         }
         .bp-header-sub {
           font-size: 12px;
-          color: #666;
+          color: var(--app-text-muted);
         }
         .bp-header-actions {
           display: flex;
@@ -358,24 +385,24 @@ export default function MarketingBlueprint(): React.JSX.Element {
         .bp-btn-secondary {
           padding: 8px 16px;
           border-radius: 8px;
-          border: 1px solid #2e2e2e;
+          border: 1px solid var(--app-border-hover);
           background: transparent;
-          color: #888;
+          color: var(--app-text-secondary);
           font-size: 13px;
           font-weight: 500;
           cursor: pointer;
           transition: all 0.15s;
         }
         .bp-btn-secondary:hover {
-          border-color: #454545;
-          color: #ededed;
+          border-color: var(--app-border-hover);
+          color: var(--app-text);
         }
         .bp-btn-primary {
           padding: 8px 20px;
           border-radius: 8px;
           border: none;
-          background: #ededed;
-          color: #0a0a0a;
+          background: var(--app-text);
+          color: var(--app-bg);
           font-size: 13px;
           font-weight: 600;
           cursor: pointer;
@@ -400,7 +427,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
         }
         .bp-hero-sub {
           font-size: 13px;
-          color: #666;
+          color: var(--app-text-muted);
           margin: 0;
         }
 
@@ -412,18 +439,18 @@ export default function MarketingBlueprint(): React.JSX.Element {
           margin-bottom: 28px;
         }
         .bp-stat {
-          background: #111;
-          border: 1px solid #1f1f1f;
+          background: var(--app-surface);
+          border: 1px solid var(--app-border);
           border-radius: 10px;
           padding: 16px 18px;
           transition: border-color 0.15s;
         }
         .bp-stat:hover {
-          border-color: #2e2e2e;
+          border-color: var(--app-border-hover);
         }
         .bp-stat-label {
           font-size: 11px;
-          color: #555;
+          color: var(--app-text-dim);
           text-transform: uppercase;
           letter-spacing: 0.05em;
           margin-bottom: 6px;
@@ -432,7 +459,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
         .bp-stat-value {
           font-size: 15px;
           font-weight: 600;
-          color: #ededed;
+          color: var(--app-text);
         }
 
         /* ── Tabs ── */
@@ -440,7 +467,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
           display: flex;
           gap: 2px;
           margin-bottom: 24px;
-          border-bottom: 1px solid #1f1f1f;
+          border-bottom: 1px solid var(--app-border);
         }
         .bp-tab {
           padding: 10px 18px;
@@ -449,62 +476,62 @@ export default function MarketingBlueprint(): React.JSX.Element {
           cursor: pointer;
           background: transparent;
           border: none;
-          color: #666;
+          color: var(--app-text-muted);
           border-bottom: 2px solid transparent;
           margin-bottom: -1px;
           transition: color 0.15s;
         }
         .bp-tab:hover {
-          color: #888;
+          color: var(--app-text-secondary);
         }
         .bp-tab--active {
-          color: #ededed;
+          color: var(--app-text);
           font-weight: 500;
-          border-bottom-color: #ededed;
+          border-bottom-color: var(--app-text);
         }
 
         /* ── Cards ── */
         .bp-card {
-          background: #111;
-          border: 1px solid #1f1f1f;
+          background: var(--app-surface);
+          border: 1px solid var(--app-border);
           border-radius: 12px;
           padding: 24px;
           transition: border-color 0.15s;
         }
         .bp-card:hover {
-          border-color: #2e2e2e;
+          border-color: var(--app-border-hover);
         }
         .bp-card-title {
           font-size: 14px;
           font-weight: 600;
           margin: 0 0 18px;
-          color: #ededed;
+          color: var(--app-text);
         }
         .bp-row {
           display: flex;
           justify-content: space-between;
           padding: 10px 0;
-          border-bottom: 1px solid #1a1a1a;
+          border-bottom: 1px solid var(--app-border-subtle);
         }
         .bp-row:last-child {
           border-bottom: none;
         }
         .bp-row-label {
           font-size: 13px;
-          color: #666;
+          color: var(--app-text-muted);
         }
         .bp-row-value {
           font-size: 13px;
           font-weight: 500;
           text-align: right;
           max-width: 60%;
-          color: #ededed;
+          color: var(--app-text);
         }
 
         /* ── Dim label ── */
         .bp-dim-label {
           font-size: 11px;
-          color: #555;
+          color: var(--app-text-dim);
           text-transform: uppercase;
           letter-spacing: 0.04em;
           font-weight: 500;
@@ -512,18 +539,18 @@ export default function MarketingBlueprint(): React.JSX.Element {
 
         /* ── Expandable rows ── */
         .bp-expandable {
-          background: #111;
-          border: 1px solid #1f1f1f;
+          background: var(--app-surface);
+          border: 1px solid var(--app-border);
           border-radius: 12px;
           cursor: pointer;
           overflow: hidden;
           transition: border-color 0.15s;
         }
         .bp-expandable:hover {
-          border-color: #2e2e2e;
+          border-color: var(--app-border-hover);
         }
         .bp-expandable--open {
-          border-color: #2e2e2e;
+          border-color: var(--app-border-hover);
         }
         .bp-expand-header {
           padding: 16px 20px;
@@ -533,7 +560,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
         }
         .bp-expand-body {
           padding: 0 20px 18px;
-          border-top: 1px solid #1a1a1a;
+          border-top: 1px solid var(--app-border-subtle);
         }
         .bp-rank {
           width: 32px;
@@ -547,7 +574,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
           flex-shrink: 0;
         }
         .bp-chevron {
-          color: #555;
+          color: var(--app-text-dim);
           font-size: 14px;
           transition: transform 0.15s;
           flex-shrink: 0;
@@ -568,9 +595,9 @@ export default function MarketingBlueprint(): React.JSX.Element {
           font-size: 10px;
           padding: 3px 10px;
           border-radius: 6px;
-          border: 1px solid #1f1f1f;
-          color: #555;
-          background: #0a0a0a;
+          border: 1px solid var(--app-border);
+          color: var(--app-text-dim);
+          background: var(--app-bg);
         }
 
         /* ── Interest chips ── */
@@ -579,13 +606,13 @@ export default function MarketingBlueprint(): React.JSX.Element {
           padding: 6px 14px;
           border-radius: 20px;
           font-weight: 500;
-          border: 1px solid #2e2e2e;
-          color: #ededed;
-          background: #1a1a1a;
+          border: 1px solid var(--app-border-hover);
+          color: var(--app-text);
+          background: var(--app-border-subtle);
           transition: border-color 0.15s;
         }
         .bp-interest:hover {
-          border-color: #454545;
+          border-color: var(--app-border-hover);
         }
 
         /* ── Compliance bar ── */
@@ -596,8 +623,8 @@ export default function MarketingBlueprint(): React.JSX.Element {
           text-align: center;
           font-size: 12px;
           font-weight: 400;
-          border: 1px solid #1f1f1f;
-          color: #555;
+          border: 1px solid var(--app-border);
+          color: var(--app-text-dim);
           background: transparent;
           transition: all 0.15s;
         }
@@ -609,18 +636,18 @@ export default function MarketingBlueprint(): React.JSX.Element {
         /* ── Rationale ── */
         .bp-rationale {
           margin-top: 28px;
-          background: #111;
-          border: 1px solid #1f1f1f;
+          background: var(--app-surface);
+          border: 1px solid var(--app-border);
           border-radius: 12px;
           padding: 24px;
         }
         .bp-rationale-text {
           font-size: 13px;
-          color: #888;
+          color: var(--app-text-secondary);
           line-height: 1.8;
         }
         .bp-rationale-text strong {
-          color: #ededed;
+          color: var(--app-text);
           font-weight: 500;
         }
 
@@ -652,8 +679,8 @@ export default function MarketingBlueprint(): React.JSX.Element {
           padding: 12px 16px;
           border-radius: 10px;
           margin-bottom: 20px;
-          border: 1px solid #1f1f1f;
-          background: #111;
+          border: 1px solid var(--app-border);
+          background: var(--app-surface);
         }
         .bp-callout-title {
           font-size: 13px;
@@ -662,14 +689,14 @@ export default function MarketingBlueprint(): React.JSX.Element {
         }
         .bp-callout-sub {
           font-size: 11px;
-          color: #666;
+          color: var(--app-text-muted);
           line-height: 1.5;
         }
 
         /* ── Psychographic section ── */
         .bp-psych-row {
           padding: 12px 0;
-          border-bottom: 1px solid #1a1a1a;
+          border-bottom: 1px solid var(--app-border-subtle);
         }
         .bp-psych-row:last-child {
           border-bottom: none;
@@ -686,7 +713,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
           border-radius: 10px;
           margin-bottom: 20px;
           font-size: 12px;
-          color: #888;
+          color: var(--app-text-secondary);
           line-height: 1.5;
         }
         .bp-edit-banner svg {
@@ -694,7 +721,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
           color: #60a5fa;
         }
         .bp-edit-banner strong {
-          color: #ededed;
+          color: var(--app-text);
           font-weight: 500;
         }
         .bp-edit-note-wrap {
@@ -710,9 +737,9 @@ export default function MarketingBlueprint(): React.JSX.Element {
           min-height: 60px;
           padding: 10px 14px;
           border-radius: 8px;
-          border: 1px solid #2e2e2e;
-          background: #0a0a0a;
-          color: #ededed;
+          border: 1px solid var(--app-border-hover);
+          background: var(--app-bg);
+          color: var(--app-text);
           font-size: 12px;
           line-height: 1.5;
           resize: vertical;
@@ -756,9 +783,9 @@ export default function MarketingBlueprint(): React.JSX.Element {
           width: 100%;
           padding: 8px 12px;
           border-radius: 8px;
-          border: 1px solid #2e2e2e;
-          background: #0a0a0a;
-          color: #ededed;
+          border: 1px solid var(--app-border-hover);
+          background: var(--app-bg);
+          color: var(--app-text);
           font-size: 13px;
           font-family: inherit;
           box-sizing: border-box;
@@ -774,11 +801,11 @@ export default function MarketingBlueprint(): React.JSX.Element {
           gap: 8px;
           padding: 10px 16px;
           background: rgba(237,237,237,0.03);
-          border: 1px solid #1f1f1f;
+          border: 1px solid var(--app-border);
           border-radius: 8px;
           margin-bottom: 16px;
           font-size: 11px;
-          color: #555;
+          color: var(--app-text-dim);
         }
         .bp-edit-locked svg {
           flex-shrink: 0;
@@ -802,8 +829,8 @@ export default function MarketingBlueprint(): React.JSX.Element {
           cursor: pointer;
         }
         .bp-compliance-level--editable:hover {
-          border-color: #454545;
-          color: #ededed;
+          border-color: var(--app-border-hover);
+          color: var(--app-text);
         }
 
         /* ── Layout ── */
@@ -824,14 +851,14 @@ export default function MarketingBlueprint(): React.JSX.Element {
         .bp-chat {
           width: 380px;
           flex-shrink: 0;
-          border-left: 1px solid #1f1f1f;
+          border-left: 1px solid var(--app-border);
           display: flex;
           flex-direction: column;
-          background: #0a0a0a;
+          background: var(--app-bg);
         }
         .bp-chat-header {
           padding: 16px 20px;
-          border-bottom: 1px solid #1f1f1f;
+          border-bottom: 1px solid var(--app-border);
           flex-shrink: 0;
         }
         .bp-chat-header-left {
@@ -843,8 +870,8 @@ export default function MarketingBlueprint(): React.JSX.Element {
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          background: #ededed;
-          color: #0a0a0a;
+          background: var(--app-text);
+          color: var(--app-bg);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -872,7 +899,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
         }
         .bp-chat-messages::-webkit-scrollbar { width: 4px; }
         .bp-chat-messages::-webkit-scrollbar-track { background: transparent; }
-        .bp-chat-messages::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 2px; }
+        .bp-chat-messages::-webkit-scrollbar-thumb { background: var(--app-border-subtle); border-radius: 2px; }
         .bp-chat-msg {
           display: flex;
           gap: 8px;
@@ -889,8 +916,8 @@ export default function MarketingBlueprint(): React.JSX.Element {
           width: 24px;
           height: 24px;
           border-radius: 50%;
-          background: #ededed;
-          color: #0a0a0a;
+          background: var(--app-text);
+          color: var(--app-bg);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -907,14 +934,14 @@ export default function MarketingBlueprint(): React.JSX.Element {
           padding: 10px 14px;
         }
         .bp-chat-bubble--ai {
-          background: #1a1a1a;
-          color: #ededed;
-          border: 1px solid #1f1f1f;
+          background: var(--app-border-subtle);
+          color: var(--app-text);
+          border: 1px solid var(--app-border);
           border-radius: 14px 14px 14px 4px;
         }
         .bp-chat-bubble--user {
-          background: #ededed;
-          color: #0a0a0a;
+          background: var(--app-text);
+          color: var(--app-bg);
           border-radius: 14px 14px 4px 14px;
         }
 
@@ -924,7 +951,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
         }
         .bp-chat-prompts-label {
           font-size: 11px;
-          color: #555;
+          color: var(--app-text-dim);
           text-transform: uppercase;
           letter-spacing: 0.04em;
           font-weight: 500;
@@ -938,23 +965,23 @@ export default function MarketingBlueprint(): React.JSX.Element {
           padding: 8px 12px;
           margin-bottom: 4px;
           border-radius: 8px;
-          border: 1px solid #1f1f1f;
+          border: 1px solid var(--app-border);
           background: transparent;
-          color: #888;
+          color: var(--app-text-secondary);
           font-size: 12px;
           cursor: pointer;
           transition: all 0.15s;
         }
         .bp-chat-prompt:hover {
-          border-color: #2e2e2e;
-          color: #ededed;
-          background: #111;
+          border-color: var(--app-border-hover);
+          color: var(--app-text);
+          background: var(--app-surface);
         }
 
         /* ── Chat Input ── */
         .bp-chat-input-wrap {
           padding: 14px 16px;
-          border-top: 1px solid #1f1f1f;
+          border-top: 1px solid var(--app-border);
           display: flex;
           align-items: center;
           gap: 8px;
@@ -964,18 +991,18 @@ export default function MarketingBlueprint(): React.JSX.Element {
           flex: 1;
           padding: 10px 14px;
           border-radius: 10px;
-          border: 1px solid #2e2e2e;
-          background: #111;
-          color: #ededed;
+          border: 1px solid var(--app-border-hover);
+          background: var(--app-surface);
+          color: var(--app-text);
           font-size: 13px;
           outline: none;
           transition: border-color 0.15s;
         }
         .bp-chat-input:focus {
-          border-color: #454545;
+          border-color: var(--app-border-hover);
         }
         .bp-chat-input::placeholder {
-          color: #555;
+          color: var(--app-text-dim);
         }
         .bp-chat-send {
           width: 34px;
@@ -983,7 +1010,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
           border-radius: 8px;
           border: none;
           background: transparent;
-          color: #555;
+          color: var(--app-text-dim);
           cursor: pointer;
           display: flex;
           align-items: center;
@@ -992,8 +1019,8 @@ export default function MarketingBlueprint(): React.JSX.Element {
           flex-shrink: 0;
         }
         .bp-chat-send--active {
-          background: #ededed;
-          color: #0a0a0a;
+          background: var(--app-text);
+          color: var(--app-bg);
         }
         .bp-chat-send--active:hover {
           background: #d4d4d4;
@@ -1012,7 +1039,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
           width: 6px;
           height: 6px;
           border-radius: 50%;
-          background: #555;
+          background: var(--app-text-dim);
           animation: bp-dot-bounce 1.2s infinite;
         }
         .bp-thinking-dots span:nth-child(2) {
@@ -1044,6 +1071,132 @@ export default function MarketingBlueprint(): React.JSX.Element {
           from { opacity: 0; transform: translateY(24px); }
           to { opacity: 1; transform: translateY(0); }
         }
+
+        /* ── Approval Overlay ── */
+        .bp-approval-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 100;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(0,0,0,0);
+          animation: bp-overlay-bg 0.6s ease forwards;
+        }
+        @keyframes bp-overlay-bg {
+          to { background: rgba(0,0,0,0.85); }
+        }
+        .bp-approval-card {
+          background: var(--app-surface);
+          border: 1px solid var(--app-border);
+          border-radius: 20px;
+          padding: 48px 56px;
+          text-align: center;
+          min-width: 420px;
+          animation: bp-approval-enter 0.5s cubic-bezier(0.16,1,0.3,1) both;
+          animation-delay: 0.2s;
+        }
+        @keyframes bp-approval-enter {
+          from { opacity: 0; transform: scale(0.9) translateY(20px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .bp-approval-icon {
+          width: 72px;
+          height: 72px;
+          border-radius: 50%;
+          margin: 0 auto 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .bp-approval-icon--checking {
+          background: rgba(96,165,250,0.1);
+          border: 2px solid rgba(96,165,250,0.3);
+          animation: bp-pulse-ring 1.5s ease infinite;
+        }
+        .bp-approval-icon--approved {
+          background: rgba(80,227,194,0.15);
+          border: 2px solid rgba(80,227,194,0.4);
+          animation: bp-pop-in 0.5s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        @keyframes bp-pulse-ring {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(96,165,250,0.15); }
+          50% { box-shadow: 0 0 0 12px rgba(96,165,250,0); }
+        }
+        @keyframes bp-pop-in {
+          from { transform: scale(0.5); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        .bp-approval-spinner {
+          width: 28px;
+          height: 28px;
+          border: 3px solid rgba(96,165,250,0.2);
+          border-top-color: #60a5fa;
+          border-radius: 50%;
+          animation: bp-spin 0.8s linear infinite;
+        }
+        @keyframes bp-spin {
+          to { transform: rotate(360deg); }
+        }
+        .bp-approval-title {
+          font-size: 20px;
+          font-weight: 600;
+          margin-bottom: 8px;
+          letter-spacing: -0.02em;
+        }
+        .bp-approval-sub {
+          font-size: 13px;
+          color: var(--app-text-muted);
+          line-height: 1.6;
+          margin-bottom: 28px;
+        }
+        .bp-approval-checks {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          text-align: left;
+          margin-bottom: 28px;
+        }
+        .bp-approval-check {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 13px;
+          color: var(--app-text-dim);
+          transition: color 0.3s;
+        }
+        .bp-approval-check--done {
+          color: var(--app-text);
+        }
+        .bp-approval-check-dot {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          border: 1.5px solid var(--app-border-hover);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: all 0.3s;
+        }
+        .bp-approval-check-dot--done {
+          background: #50e3c2;
+          border-color: #50e3c2;
+        }
+        .bp-approval-progress {
+          width: 100%;
+          height: 3px;
+          background: var(--app-border);
+          border-radius: 2px;
+          overflow: hidden;
+          margin-top: 8px;
+        }
+        .bp-approval-progress-bar {
+          height: 100%;
+          border-radius: 2px;
+          background: linear-gradient(90deg, #60a5fa, #50e3c2);
+          transition: width 1.8s cubic-bezier(0.16,1,0.3,1);
+        }
       `}</style>
 
       <div className="bp-page-enter">
@@ -1060,6 +1213,13 @@ export default function MarketingBlueprint(): React.JSX.Element {
         <div className="bp-header-actions">
           {editMode ? (
             <>
+              <button className="bp-btn-secondary" onClick={toggleTheme} style={{ display: "flex", alignItems: "center", padding: "8px 10px" }}>
+                {dark ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                )}
+              </button>
               <button className="bp-btn-secondary" onClick={() => setEditMode(false)}>Cancel</button>
               <button className="bp-btn-primary" onClick={() => {
                 // Apply edits
@@ -1074,11 +1234,19 @@ export default function MarketingBlueprint(): React.JSX.Element {
             </>
           ) : (
             <>
+              <button className="bp-btn-secondary" onClick={toggleTheme} style={{ display: "flex", alignItems: "center", padding: "8px 10px" }}>
+                {dark ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                )}
+              </button>
               <button className="bp-btn-secondary" onClick={() => setEditMode(true)}>Edit Blueprint</button>
-              <button className="bp-btn-primary" onClick={() => navigate("/amplify-os/content-studio")}>
+              <button className="bp-btn-primary" onClick={handleApprove}>
                 Approve & Continue
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
               </button>
+              <button onClick={() => navigate("/amplify-os/content-studio")} style={{ padding: "6px 14px", borderRadius: 6, border: "1px dashed var(--app-text-dim)", background: "transparent", color: "var(--app-text-secondary)", fontSize: 11, cursor: "pointer", marginLeft: 4, transition: "all 0.15s", flexShrink: 0 }} title="Skip to next section">Skip &rsaquo;</button>
             </>
           )}
         </div>
@@ -1169,7 +1337,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
                 {d.desiredOutcomes.map((o, i) => (
                   <div key={i} style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-start" }}>
                     <span className="bp-tag" style={{ background: outcomeColors[i].bg, color: outcomeColors[i].text, marginTop: 2 }}>{o.type}</span>
-                    <span style={{ fontSize: 12, color: "#888", lineHeight: 1.5 }}>{o.outcome}</span>
+                    <span style={{ fontSize: 12, color: "var(--app-text-secondary)", lineHeight: 1.5 }}>{o.outcome}</span>
                   </div>
                 ))}
               </div>
@@ -1185,12 +1353,12 @@ export default function MarketingBlueprint(): React.JSX.Element {
               return (
                 <div key={i} className={`bp-expandable ${isOpen ? "bp-expandable--open" : ""}`}>
                   <div className="bp-expand-header" onClick={() => setExpandedPain(isOpen ? null : i)} style={{ cursor: "pointer" }}>
-                    <div className="bp-rank" style={{ background: "rgba(237,237,237,0.06)", color: "#ededed" }}>
+                    <div className="bp-rank" style={{ background: "rgba(237,237,237,0.06)", color: "var(--app-text)" }}>
                       {pp.rank}
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{pp.title}</div>
-                      <div style={{ fontSize: 12, color: "#666" }}>{pp.description.slice(0, 80)}...</div>
+                      <div style={{ fontSize: 12, color: "var(--app-text-muted)" }}>{pp.description.slice(0, 80)}...</div>
                     </div>
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       <span className="bp-tag" style={{ background: pp.urgency === "High" ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)", color: urgencyColors[pp.urgency] }}>{pp.urgency} Urgency</span>
@@ -1200,10 +1368,10 @@ export default function MarketingBlueprint(): React.JSX.Element {
                   </div>
                   {isOpen && (
                     <div className="bp-expand-body">
-                      <div style={{ paddingTop: 14, fontSize: 13, color: "#888", lineHeight: 1.7 }}>{pp.description}</div>
-                      <div style={{ marginTop: 14, padding: "12px 16px", background: "#0a0a0a", borderRadius: 10, border: "1px solid #1f1f1f" }}>
+                      <div style={{ paddingTop: 14, fontSize: 13, color: "var(--app-text-secondary)", lineHeight: 1.7 }}>{pp.description}</div>
+                      <div style={{ marginTop: 14, padding: "12px 16px", background: "var(--app-bg)", borderRadius: 10, border: "1px solid var(--app-border)" }}>
                         <div className="bp-dim-label" style={{ marginBottom: 6 }}>Why This Matters for Content</div>
-                        <div style={{ fontSize: 12, color: "#888", lineHeight: 1.6 }}>
+                        <div style={{ fontSize: 12, color: "var(--app-text-secondary)", lineHeight: 1.6 }}>
                           This pain point directly informs ad angles, webinar content, and sequence messaging. Ads that lead with this concern will resonate because the emotional weight ({pp.emotional.toLowerCase()}) combined with {pp.urgency.toLowerCase()} urgency creates a strong motivation to act.
                         </div>
                       </div>
@@ -1243,12 +1411,12 @@ export default function MarketingBlueprint(): React.JSX.Element {
         {/* TAB: AD ANGLES */}
         {activeTab === "angles" && (
           <div>
-            <p style={{ fontSize: 13, color: "#666", margin: "0 0 16px", lineHeight: 1.6 }}>
+            <p style={{ fontSize: 13, color: "var(--app-text-muted)", margin: "0 0 16px", lineHeight: 1.6 }}>
               These are the content angles the system will use to generate ad scripts. Each angle targets a specific pain point with a unique messaging approach. Meta's Andromeda algorithm performs best with 15+ diverse angles per month.
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {d.angles.map((a, i) => {
-                const cc = categoryColors[a.category] || { bg: "rgba(237,237,237,0.06)", text: "#ededed" };
+                const cc = categoryColors[a.category] || { bg: "rgba(237,237,237,0.06)", text: "var(--app-text)" };
                 const isExp = expandedAngle === i;
                 return (
                   <div key={i} className={`bp-expandable ${isExp ? "bp-expandable--open" : ""}`}>
@@ -1260,13 +1428,13 @@ export default function MarketingBlueprint(): React.JSX.Element {
                         </div>
                         <span className={`bp-chevron ${isExp ? "bp-chevron--open" : ""}`}>&#9662;</span>
                       </div>
-                      <div style={{ fontSize: 12, color: "#888", lineHeight: 1.5, fontStyle: "italic" }}>"{a.hook}"</div>
+                      <div style={{ fontSize: 12, color: "var(--app-text-secondary)", lineHeight: 1.5, fontStyle: "italic" }}>"{a.hook}"</div>
                     </div>
                     {isExp && (
-                      <div style={{ padding: "0 18px 16px", borderTop: "1px solid #1a1a1a" }}>
+                      <div style={{ padding: "0 18px 16px", borderTop: "1px solid var(--app-border-subtle)" }}>
                         <div style={{ paddingTop: 14 }}>
                           <div className="bp-dim-label" style={{ marginBottom: 6 }}>Why This Angle Works</div>
-                          <div style={{ fontSize: 12, color: "#888", lineHeight: 1.6 }}>{a.why}</div>
+                          <div style={{ fontSize: 12, color: "var(--app-text-secondary)", lineHeight: 1.6 }}>{a.why}</div>
                         </div>
                         {editMode && (
                           <div className="bp-edit-note-wrap">
@@ -1313,7 +1481,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
         {/* TAB: EDUCATION TOPICS */}
         {activeTab === "education" && (
           <div>
-            <p style={{ fontSize: 13, color: "#666", margin: "0 0 20px", lineHeight: 1.6 }}>
+            <p style={{ fontSize: 13, color: "var(--app-text-muted)", margin: "0 0 20px", lineHeight: 1.6 }}>
               These 3 topics form the backbone of all educational content — the webinar, long-form videos, and organic posts. The Amplified framework always focuses on exactly 3 topics to build authority without overwhelming the audience.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1330,7 +1498,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>{t.title}</div>
-                      <div style={{ fontSize: 13, color: "#888", lineHeight: 1.6 }}>{t.description}</div>
+                      <div style={{ fontSize: 13, color: "var(--app-text-secondary)", lineHeight: 1.6 }}>{t.description}</div>
                       <div style={{ marginTop: 12, display: "flex", gap: 6 }}>
                         {(["Webinar", "Ads", "Organic"] as const).map(tag => (
                           <span key={tag} className="bp-tag-outline">{tag}</span>
@@ -1405,7 +1573,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
                     className="bp-edit-field"
                   />
                 ) : (
-                  <div style={{ fontSize: 13, color: "#888" }}>{d.targeting.geoSecondary}</div>
+                  <div style={{ fontSize: 13, color: "var(--app-text-secondary)" }}>{d.targeting.geoSecondary}</div>
                 )}
               </div>
             </div>
@@ -1472,19 +1640,45 @@ export default function MarketingBlueprint(): React.JSX.Element {
           const appts = Math.round(qualLeads * bookingRate);
           const closeRate = 0.3;
           const clients = Math.round(appts * closeRate);
+
+          // Revenue model calculations
           const avgAUM = 500000;
-          const feeRate = 0.01;
-          const annualRevPerClient = avgAUM * feeRate;
-          const totalNewRev = clients * annualRevPerClient;
+          const aumFeeRate = 0.01;
+          const avgAnnuityPremium = 250000;
+          const annuityCommRate = 0.06;
+          const avgFinPlanFee = 3500;
+
+          const aumRevPerClient = avgAUM * aumFeeRate; // $5,000/yr recurring
+          const annuityRevPerClient = avgAnnuityPremium * annuityCommRate; // $15,000 one-time
+          const feeRevPerClient = avgFinPlanFee; // $3,500/yr
+
+          const blendedRevPerClient = (
+            (revSplitAUM / 100) * aumRevPerClient +
+            (revSplitAnnuities / 100) * annuityRevPerClient +
+            (revSplitFee / 100) * feeRevPerClient
+          );
+          const totalNewRev = clients * blendedRevPerClient;
           const roi = ((totalNewRev - spend * 12) / (spend * 12) * 100);
 
+          // 12-month cumulative data (AUM recurring, annuities upfront, fees recurring)
+          const monthlyData = Array.from({ length: 12 }, (_, m) => {
+            const mo = m + 1;
+            const aumCum = clients * mo * aumRevPerClient * (revSplitAUM / 100);
+            const annuityCum = clients * mo * annuityRevPerClient * (revSplitAnnuities / 100);
+            const feeCum = clients * mo * feeRevPerClient * (revSplitFee / 100);
+            return { month: mo, aum: aumCum, annuity: annuityCum, fee: feeCum, total: aumCum + annuityCum + feeCum, spend: spend * mo };
+          });
+          const maxCumRev = monthlyData[11].total;
+
           const funnel = [
-            { label: "Monthly Ad Spend", value: `$${spend.toLocaleString()}`, sub: "Based on your budget range", color: "#ededed" },
+            { label: "Monthly Ad Spend", value: `$${spend.toLocaleString()}`, sub: "Based on your budget range", color: "var(--app-text)" },
             { label: "Total Leads", value: leads.toString(), sub: `~$${cpl} cost per lead`, color: "#60a5fa" },
             { label: "Qualified Leads", value: qualLeads.toString(), sub: `${Math.round(qualRate * 100)}% qualification rate`, color: "#50e3c2" },
             { label: "Appointments Booked", value: appts.toString(), sub: `${Math.round(bookingRate * 100)}% booking rate`, color: "#c084fc" },
             { label: "New Clients", value: clients.toString(), sub: `${Math.round(closeRate * 100)}% close rate`, color: "#fbbf24" },
           ];
+
+          const modelLabels: Record<string, string> = { aum: "AUM", annuities: "Annuities", "fee-based": "Fee-Based", hybrid: "Hybrid" };
 
           return (
             <div>
@@ -1494,9 +1688,98 @@ export default function MarketingBlueprint(): React.JSX.Element {
                   Projections are calculated automatically based on your blueprint data and cannot be manually edited.
                 </div>
               )}
-              <p style={{ fontSize: 13, color: "#666", margin: "0 0 24px", lineHeight: 1.6 }}>
+              <p style={{ fontSize: 13, color: "var(--app-text-muted)", margin: "0 0 24px", lineHeight: 1.6 }}>
                 Based on your target audience, service model, and market — here's what a typical month could look like. These are conservative estimates based on industry benchmarks for financial advisor campaigns.
               </p>
+
+              {/* Revenue Model Selector */}
+              <div className="bp-card" style={{ marginBottom: 20, padding: "20px 24px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                  <h3 className="bp-card-title" style={{ margin: 0 }}>Revenue Model</h3>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {(["aum", "annuities", "fee-based", "hybrid"] as RevenueModel[]).map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => applyRevenuePreset(m)}
+                        style={{
+                          padding: "6px 14px",
+                          borderRadius: 6,
+                          border: revenueModel === m ? "1px solid var(--app-text)" : "1px solid var(--app-border-hover)",
+                          background: revenueModel === m ? "var(--app-text)" : "transparent",
+                          color: revenueModel === m ? "var(--app-bg)" : "var(--app-text-secondary)",
+                          fontSize: 12,
+                          fontWeight: revenueModel === m ? 600 : 400,
+                          cursor: "pointer",
+                          transition: "all 0.15s",
+                        }}
+                      >
+                        {modelLabels[m]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Revenue split sliders */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
+                  {[
+                    { label: "AUM Revenue", value: revSplitAUM, set: setRevSplitAUM, color: "#60a5fa", desc: `$${aumRevPerClient.toLocaleString()}/yr per client` },
+                    { label: "Annuity Commissions", value: revSplitAnnuities, set: setRevSplitAnnuities, color: "#c084fc", desc: `$${annuityRevPerClient.toLocaleString()} per client` },
+                    { label: "Financial Planning Fees", value: revSplitFee, set: setRevSplitFee, color: "#fbbf24", desc: `$${feeRevPerClient.toLocaleString()}/yr per client` },
+                  ].map((s) => (
+                    <div key={s.label}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <span style={{ fontSize: 12, color: "var(--app-text-secondary)" }}>{s.label}</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: s.color }}>{s.value}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={s.value}
+                        onChange={(e) => {
+                          const v = Number(e.target.value);
+                          s.set(v);
+                          setRevenueModel("hybrid");
+                        }}
+                        style={{
+                          width: "100%",
+                          height: 4,
+                          appearance: "none",
+                          WebkitAppearance: "none",
+                          background: `linear-gradient(to right, ${s.color} 0%, ${s.color} ${s.value}%, var(--app-border) ${s.value}%, var(--app-border) 100%)`,
+                          borderRadius: 4,
+                          outline: "none",
+                          cursor: "pointer",
+                          accentColor: s.color,
+                        }}
+                      />
+                      <div style={{ fontSize: 11, color: "var(--app-text-dim)", marginTop: 4 }}>{s.desc}</div>
+                    </div>
+                  ))}
+                </div>
+                {/* Split total indicator */}
+                {(() => {
+                  const total = revSplitAUM + revSplitAnnuities + revSplitFee;
+                  return (
+                    <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ flex: 1, height: 6, borderRadius: 3, background: "var(--app-border)", overflow: "hidden", display: "flex" }}>
+                        {revSplitAUM > 0 && <div style={{ width: `${(revSplitAUM / total) * 100}%`, background: "#60a5fa", height: "100%" }} />}
+                        {revSplitAnnuities > 0 && <div style={{ width: `${(revSplitAnnuities / total) * 100}%`, background: "#c084fc", height: "100%" }} />}
+                        {revSplitFee > 0 && <div style={{ width: `${(revSplitFee / total) * 100}%`, background: "#fbbf24", height: "100%" }} />}
+                      </div>
+                      <span style={{ fontSize: 11, color: total === 100 ? "var(--app-text-dim)" : "#ef4444", whiteSpace: "nowrap" }}>
+                        {total === 100 ? "100% allocated" : `${total}% — adjust to 100%`}
+                      </span>
+                    </div>
+                  );
+                })()}
+                <div style={{ marginTop: 12, padding: "10px 14px", background: "var(--app-bg)", borderRadius: 8, border: "1px solid var(--app-border)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: "var(--app-text-secondary)" }}>Blended Revenue per Client</span>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: "#50e3c2" }}>${Math.round(blendedRevPerClient).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
 
               {/* Funnel */}
               <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
@@ -1505,29 +1788,30 @@ export default function MarketingBlueprint(): React.JSX.Element {
                     <div className="bp-card" style={{ textAlign: "center", padding: "20px 14px", borderTop: `2px solid ${f.color}` }}>
                       <div style={{ fontSize: 28, fontWeight: 700, color: f.color, marginBottom: 4 }}>{f.value}</div>
                       <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>{f.label}</div>
-                      <div style={{ fontSize: 11, color: "#555" }}>{f.sub}</div>
+                      <div style={{ fontSize: 11, color: "var(--app-text-dim)" }}>{f.sub}</div>
                     </div>
                     {i < funnel.length - 1 && (
-                      <div style={{ position: "absolute", right: -12, top: "50%", transform: "translateY(-50%)", color: "#333", fontSize: 16, zIndex: 1 }}>&#8250;</div>
+                      <div style={{ position: "absolute", right: -12, top: "50%", transform: "translateY(-50%)", color: "var(--app-text-faint)", fontSize: 16, zIndex: 1 }}>&#8250;</div>
                     )}
                   </div>
                 ))}
               </div>
 
               {/* Revenue projections */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 24 }}>
                 <div className="bp-card">
                   <h3 className="bp-card-title">Revenue Impact</h3>
                   {[
-                    ["Avg AUM per Client", `$${avgAUM.toLocaleString()}`],
-                    ["Fee Rate", `${(feeRate * 100).toFixed(1)}%`],
-                    ["Revenue per Client", `$${annualRevPerClient.toLocaleString()}/yr`],
+                    ["Blended Rev / Client", `$${Math.round(blendedRevPerClient).toLocaleString()}`],
+                    ...(revSplitAUM > 0 ? [["  AUM Component", `$${Math.round(aumRevPerClient * revSplitAUM / 100).toLocaleString()}/yr`]] : []),
+                    ...(revSplitAnnuities > 0 ? [["  Annuity Component", `$${Math.round(annuityRevPerClient * revSplitAnnuities / 100).toLocaleString()}`]] : []),
+                    ...(revSplitFee > 0 ? [["  Fee Component", `$${Math.round(feeRevPerClient * revSplitFee / 100).toLocaleString()}/yr`]] : []),
                     ["New Clients (Monthly)", clients.toString()],
-                    ["New Annual Revenue", `$${totalNewRev.toLocaleString()}`],
-                  ].map(([label, val], i) => (
+                    ["New Annual Revenue", `$${Math.round(totalNewRev).toLocaleString()}`],
+                  ].map(([label, val], i, arr) => (
                     <div key={i} className="bp-row">
-                      <span className="bp-row-label">{label}</span>
-                      <span className="bp-row-value" style={i === 4 ? { color: "#50e3c2", fontWeight: 600 } : {}}>{val}</span>
+                      <span className="bp-row-label" style={(label as string).startsWith("  ") ? { paddingLeft: 12, fontSize: 12, color: "var(--app-text-muted)" } : {}}>{(label as string).trim()}</span>
+                      <span className="bp-row-value" style={i === arr.length - 1 ? { color: "#50e3c2", fontWeight: 600 } : {}}>{val}</span>
                     </div>
                   ))}
                 </div>
@@ -1536,28 +1820,116 @@ export default function MarketingBlueprint(): React.JSX.Element {
                   <h3 className="bp-card-title">Return on Investment</h3>
                   <div style={{ textAlign: "center", padding: "20px 0 10px" }}>
                     <div style={{ fontSize: 48, fontWeight: 700, color: roi > 0 ? "#50e3c2" : "#ef4444", letterSpacing: "-0.03em" }}>{roi > 0 ? "+" : ""}{Math.round(roi)}%</div>
-                    <div style={{ fontSize: 13, color: "#888", marginTop: 4 }}>Estimated first-year ROI</div>
+                    <div style={{ fontSize: 13, color: "var(--app-text-secondary)", marginTop: 4 }}>Estimated first-year ROI</div>
                   </div>
-                  <div style={{ marginTop: 20, padding: "14px 16px", background: "#0a0a0a", borderRadius: 10, border: "1px solid #1f1f1f" }}>
+                  <div style={{ marginTop: 20, padding: "14px 16px", background: "var(--app-bg)", borderRadius: 10, border: "1px solid var(--app-border)" }}>
                     <div className="bp-dim-label" style={{ marginBottom: 6 }}>The Math</div>
-                    <div style={{ fontSize: 12, color: "#888", lineHeight: 1.7 }}>
+                    <div style={{ fontSize: 12, color: "var(--app-text-secondary)", lineHeight: 1.7 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                         <span>Annual ad spend</span>
-                        <span style={{ color: "#ededed" }}>${(spend * 12).toLocaleString()}</span>
+                        <span style={{ color: "var(--app-text)" }}>${(spend * 12).toLocaleString()}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                         <span>New revenue generated</span>
-                        <span style={{ color: "#50e3c2" }}>${totalNewRev.toLocaleString()}</span>
+                        <span style={{ color: "#50e3c2" }}>${Math.round(totalNewRev).toLocaleString()}</span>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #1f1f1f", paddingTop: 6, marginTop: 4 }}>
-                        <span style={{ fontWeight: 500, color: "#ededed" }}>Net return</span>
-                        <span style={{ fontWeight: 600, color: "#50e3c2" }}>${(totalNewRev - spend * 12).toLocaleString()}</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--app-border)", paddingTop: 6, marginTop: 4 }}>
+                        <span style={{ fontWeight: 500, color: "var(--app-text)" }}>Net return</span>
+                        <span style={{ fontWeight: 600, color: "#50e3c2" }}>${Math.round(totalNewRev - spend * 12).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
-                  <div style={{ marginTop: 14, fontSize: 11, color: "#555", lineHeight: 1.5 }}>
-                    * Projections assume AUM-based fee model. Actual results vary based on market conditions, ad creative quality, and sales process.
+                  <div style={{ marginTop: 14, fontSize: 11, color: "var(--app-text-dim)", lineHeight: 1.5 }}>
+                    * Projections based on your {modelLabels[revenueModel].toLowerCase()} revenue model. Actual results vary based on market conditions, ad creative quality, and sales process.
                   </div>
+                </div>
+              </div>
+
+              {/* ── Visual Dashboard ── */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                {/* 12-Month Revenue Growth Chart */}
+                <div className="bp-card" style={{ padding: "24px" }}>
+                  <h3 className="bp-card-title">12-Month Cumulative Revenue</h3>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 160, marginTop: 12 }}>
+                    {monthlyData.map((m) => {
+                      const pct = maxCumRev > 0 ? (m.total / maxCumRev) * 100 : 0;
+                      const spendPct = maxCumRev > 0 ? (m.spend / maxCumRev) * 100 : 0;
+                      return (
+                        <div key={m.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end", position: "relative" }}>
+                          {/* Spend line indicator */}
+                          <div style={{ position: "absolute", bottom: `${Math.min(spendPct, 100)}%`, left: 0, right: 0, borderTop: "1px dashed #ef444466", zIndex: 2 }} />
+                          {/* Stacked bar */}
+                          <div style={{ width: "100%", borderRadius: "3px 3px 0 0", overflow: "hidden", display: "flex", flexDirection: "column-reverse" }}>
+                            {revSplitAUM > 0 && (
+                              <div style={{ height: `${(m.aum / maxCumRev) * 160}px`, background: "#60a5fa", minHeight: m.aum > 0 ? 1 : 0 }} />
+                            )}
+                            {revSplitAnnuities > 0 && (
+                              <div style={{ height: `${(m.annuity / maxCumRev) * 160}px`, background: "#c084fc", minHeight: m.annuity > 0 ? 1 : 0 }} />
+                            )}
+                            {revSplitFee > 0 && (
+                              <div style={{ height: `${(m.fee / maxCumRev) * 160}px`, background: "#fbbf24", minHeight: m.fee > 0 ? 1 : 0 }} />
+                            )}
+                          </div>
+                          <div style={{ fontSize: 9, color: "var(--app-text-dim)", marginTop: 4 }}>M{m.month}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: "flex", gap: 14, marginTop: 14, justifyContent: "center" }}>
+                    {revSplitAUM > 0 && <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--app-text-secondary)" }}><div style={{ width: 8, height: 8, borderRadius: 2, background: "#60a5fa" }} />AUM</div>}
+                    {revSplitAnnuities > 0 && <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--app-text-secondary)" }}><div style={{ width: 8, height: 8, borderRadius: 2, background: "#c084fc" }} />Annuities</div>}
+                    {revSplitFee > 0 && <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--app-text-secondary)" }}><div style={{ width: 8, height: 8, borderRadius: 2, background: "#fbbf24" }} />Fees</div>}
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--app-text-secondary)" }}><div style={{ width: 12, height: 0, borderTop: "1px dashed #ef4444" }} />Ad Spend</div>
+                  </div>
+                </div>
+
+                {/* Revenue Breakdown Donut-style */}
+                <div className="bp-card" style={{ padding: "24px" }}>
+                  <h3 className="bp-card-title">Revenue Breakdown per Client</h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 12 }}>
+                    {[
+                      { label: "AUM Fees", value: aumRevPerClient * revSplitAUM / 100, split: revSplitAUM, color: "#60a5fa", type: "Recurring" },
+                      { label: "Annuity Commissions", value: annuityRevPerClient * revSplitAnnuities / 100, split: revSplitAnnuities, color: "#c084fc", type: "Upfront" },
+                      { label: "Planning Fees", value: feeRevPerClient * revSplitFee / 100, split: revSplitFee, color: "#fbbf24", type: "Recurring" },
+                    ].filter(r => r.split > 0).map((r) => (
+                      <div key={r.label}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 13, fontWeight: 500 }}>{r.label}</span>
+                            <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: r.type === "Recurring" ? "rgba(80,227,194,0.1)" : "rgba(192,132,252,0.1)", color: r.type === "Recurring" ? "#50e3c2" : "#c084fc" }}>{r.type}</span>
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: r.color }}>${Math.round(r.value).toLocaleString()}</span>
+                        </div>
+                        <div style={{ height: 8, background: "var(--app-border)", borderRadius: 4, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${blendedRevPerClient > 0 ? (r.value / blendedRevPerClient) * 100 : 0}%`, background: r.color, borderRadius: 4, transition: "width 0.3s ease" }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Key metrics */}
+                  <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div style={{ padding: "14px", background: "var(--app-bg)", borderRadius: 8, border: "1px solid var(--app-border)", textAlign: "center" }}>
+                      <div style={{ fontSize: 22, fontWeight: 700, color: "var(--app-text)" }}>${Math.round(totalNewRev / 12).toLocaleString()}</div>
+                      <div style={{ fontSize: 11, color: "var(--app-text-dim)", marginTop: 2 }}>Monthly New Revenue</div>
+                    </div>
+                    <div style={{ padding: "14px", background: "var(--app-bg)", borderRadius: 8, border: "1px solid var(--app-border)", textAlign: "center" }}>
+                      <div style={{ fontSize: 22, fontWeight: 700, color: roi > 0 ? "#50e3c2" : "#ef4444" }}>{roi > 0 ? "+" : ""}{Math.round(roi)}%</div>
+                      <div style={{ fontSize: 11, color: "var(--app-text-dim)", marginTop: 2 }}>First-Year ROI</div>
+                    </div>
+                  </div>
+
+                  {/* Breakeven indicator */}
+                  {(() => {
+                    const monthlyRev = totalNewRev / 12;
+                    const breakeven = monthlyRev > 0 ? Math.ceil(spend / monthlyRev) : null;
+                    return breakeven && breakeven <= 12 ? (
+                      <div style={{ marginTop: 14, padding: "10px 14px", background: "rgba(80,227,194,0.05)", borderRadius: 8, border: "1px solid rgba(80,227,194,0.15)", display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#50e3c2" }} />
+                        <span style={{ fontSize: 12, color: "#50e3c2" }}>Breakeven in ~{breakeven} month{breakeven > 1 ? "s" : ""} based on your revenue model</span>
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               </div>
             </div>
@@ -1627,6 +1999,57 @@ export default function MarketingBlueprint(): React.JSX.Element {
       </aside>
       </div>
       </div>{/* close reveal wrapper */}
+
+      {/* ── Approval Overlay ── */}
+      {showApproval && (() => {
+        const checks = [
+          { label: "ICP Profile verified", delay: 0.4 },
+          { label: "Pain points & ad angles locked", delay: 0.8 },
+          { label: "Education topics confirmed", delay: 1.2 },
+          { label: "Targeting & compliance saved", delay: 1.6 },
+          { label: "Blueprint approved", delay: 2.0 },
+        ];
+        const isDone = approvalStage === "approved" || approvalStage === "done";
+        return (
+          <div className="bp-approval-overlay">
+            <div className="bp-approval-card">
+              <div className={`bp-approval-icon ${isDone ? "bp-approval-icon--approved" : "bp-approval-icon--checking"}`}>
+                {isDone ? (
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#50e3c2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                ) : (
+                  <div className="bp-approval-spinner" />
+                )}
+              </div>
+              <div className="bp-approval-title">
+                {approvalStage === "checking" ? "Finalizing Blueprint..." : approvalStage === "approved" ? "Blueprint Approved" : "Redirecting..."}
+              </div>
+              <div className="bp-approval-sub">
+                {approvalStage === "checking"
+                  ? "Locking in your strategy and preparing your content studio."
+                  : approvalStage === "approved"
+                  ? "Your marketing strategy is locked and ready. Let's build your content."
+                  : "Taking you to the Video Generation Studio..."}
+              </div>
+              <div className="bp-approval-checks">
+                {checks.map((c, i) => {
+                  const checkDone = isDone || (approvalStage === "checking" && i < 3);
+                  return (
+                    <div key={i} className={`bp-approval-check ${checkDone ? "bp-approval-check--done" : ""}`} style={{ animation: `bp-fade-in 0.3s ease both`, animationDelay: `${c.delay}s` }}>
+                      <div className={`bp-approval-check-dot ${checkDone ? "bp-approval-check-dot--done" : ""}`}>
+                        {checkDone && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--app-bg)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
+                      </div>
+                      {c.label}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="bp-approval-progress">
+                <div className="bp-approval-progress-bar" style={{ width: approvalStage === "checking" ? "60%" : "100%" }} />
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

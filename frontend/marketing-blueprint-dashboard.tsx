@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,6 +49,34 @@ interface Targeting {
   interests: string[];
 }
 
+interface AdvisorFees {
+  aumFeePct: number;           // e.g. 1.0 = 1%
+  avgClientAUM: number;        // average AUM per client
+  aumMixPct: number;           // % of new clients that are AUM (e.g. 60)
+  annuityAvgCommission: number; // upfront commission per annuity sale
+  annuityMixPct: number;       // % of new clients that are annuity (e.g. 40)
+  financialPlanAvgPrice: number;// fee per financial plan
+  planAttachRate: number;      // % of clients that also buy a plan (e.g. 70)
+  monthlyAdSpend: number;
+  leadsPerMonth: number;
+  leadToClientPct: number;     // conversion rate (e.g. 8 = 8%)
+}
+
+interface YearProjection {
+  year: number;
+  newClients: number;
+  aumRevenue: number;          // recurring AUM fees (cumulative clients)
+  annuityRevenue: number;      // one-time commissions that year
+  planRevenue: number;         // plan fees that year
+  totalRevenue: number;
+  adSpend: number;
+  netROI: number;
+  cumulativeRevenue: number;
+  cumulativeAdSpend: number;
+  cumulativeROI: number;
+  totalClientsManaged: number; // running count of AUM clients
+}
+
 interface BlueprintData {
   firmName: string;
   advisorName: string;
@@ -61,9 +89,12 @@ interface BlueprintData {
   targeting: Targeting;
   complianceLevel: "Conservative" | "Moderate" | "Aggressive";
   tone: string;
+  fees: AdvisorFees;
 }
 
-type TabId = "icp" | "pain" | "angles" | "education" | "targeting";
+type TabId = "icp" | "pain" | "angles" | "education" | "targeting" | "projections";
+
+type ProjectionHorizon = "1y" | "2y" | "5y" | "10y";
 
 interface Tab {
   id: TabId;
@@ -127,7 +158,72 @@ const mockData: BlueprintData = {
   },
   complianceLevel: "Moderate",
   tone: "Professional but warm. Lead with empathy, back with data. No jargon.",
+  fees: {
+    aumFeePct: 1.0,
+    avgClientAUM: 450000,
+    aumMixPct: 60,
+    annuityAvgCommission: 4500,
+    annuityMixPct: 40,
+    financialPlanAvgPrice: 2500,
+    planAttachRate: 70,
+    monthlyAdSpend: 3000,
+    leadsPerMonth: 40,
+    leadToClientPct: 8,
+  },
 };
+
+// ─── Projection Engine ───────────────────────────────────────────────────────
+
+function buildProjections(fees: AdvisorFees, years: number): YearProjection[] {
+  const newClientsPerMonth = fees.leadsPerMonth * (fees.leadToClientPct / 100);
+  const newClientsPerYear = Math.round(newClientsPerMonth * 12);
+  const aumClientsPerYear = Math.round(newClientsPerYear * (fees.aumMixPct / 100));
+  const annuityClientsPerYear = Math.round(newClientsPerYear * (fees.annuityMixPct / 100));
+  const planClientsPerYear = Math.round(newClientsPerYear * (fees.planAttachRate / 100));
+  const annualAumPerClient = fees.avgClientAUM * (fees.aumFeePct / 100);
+  const annualAdSpend = fees.monthlyAdSpend * 12;
+
+  const projections: YearProjection[] = [];
+  let cumulativeRevenue = 0;
+  let cumulativeAdSpend = 0;
+  let totalAumClients = 0;
+
+  for (let y = 1; y <= years; y++) {
+    totalAumClients += aumClientsPerYear;
+    const aumRevenue = totalAumClients * annualAumPerClient;
+    const annuityRevenue = annuityClientsPerYear * fees.annuityAvgCommission;
+    const planRevenue = planClientsPerYear * fees.financialPlanAvgPrice;
+    const totalRevenue = aumRevenue + annuityRevenue + planRevenue;
+    cumulativeRevenue += totalRevenue;
+    cumulativeAdSpend += annualAdSpend;
+
+    projections.push({
+      year: y,
+      newClients: newClientsPerYear,
+      aumRevenue: Math.round(aumRevenue),
+      annuityRevenue: Math.round(annuityRevenue),
+      planRevenue: Math.round(planRevenue),
+      totalRevenue: Math.round(totalRevenue),
+      adSpend: annualAdSpend,
+      netROI: Math.round(totalRevenue - annualAdSpend),
+      cumulativeRevenue: Math.round(cumulativeRevenue),
+      cumulativeAdSpend: Math.round(cumulativeAdSpend),
+      cumulativeROI: Math.round(cumulativeRevenue - cumulativeAdSpend),
+      totalClientsManaged: totalAumClients + annuityClientsPerYear,
+    });
+  }
+  return projections;
+}
+
+function formatCurrency(n: number): string {
+  if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
+  if (n >= 1000) return `$${(n / 1000).toFixed(0)}K`;
+  return `$${n.toLocaleString()}`;
+}
+
+function formatCurrencyFull(n: number): string {
+  return `$${n.toLocaleString()}`;
+}
 
 const COLORS = {
   bg: "#09090b",
@@ -174,8 +270,14 @@ export default function MarketingBlueprint(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<TabId>("icp");
   const [expandedAngle, setExpandedAngle] = useState<number | null>(null);
   const [expandedPain, setExpandedPain] = useState<number | null>(null);
+  const [projectionHorizon, setProjectionHorizon] = useState<ProjectionHorizon>("1y");
 
   const d = mockData;
+  const allProjections = buildProjections(d.fees, 10);
+  const horizonYears: Record<ProjectionHorizon, number> = { "1y": 1, "2y": 2, "5y": 5, "10y": 10 };
+  const visibleYears = horizonYears[projectionHorizon];
+  const projections = allProjections.slice(0, visibleYears);
+  const lastYear = projections[projections.length - 1];
 
   const tabs: Tab[] = [
     { id: "icp", label: "ICP Profile" },
@@ -183,6 +285,7 @@ export default function MarketingBlueprint(): React.JSX.Element {
     { id: "angles", label: "Ad Angles" },
     { id: "education", label: "Education Topics" },
     { id: "targeting", label: "Targeting" },
+    { id: "projections", label: "Projections" },
   ];
 
   return (
@@ -444,6 +547,300 @@ export default function MarketingBlueprint(): React.JSX.Element {
             </div>
           </div>
         )}
+
+        {/* TAB: PROJECTIONS */}
+        {activeTab === "projections" && (() => {
+          const maxCumulativeRev = allProjections[visibleYears - 1].cumulativeRevenue;
+          const chartH = 240;
+          const barColors = { aum: COLORS.accent, annuity: COLORS.green, plan: COLORS.purple };
+
+          // Revenue mix for the donut
+          const totalAum = projections.reduce((s, p) => s + p.aumRevenue, 0);
+          const totalAnnuity = projections.reduce((s, p) => s + p.annuityRevenue, 0);
+          const totalPlan = projections.reduce((s, p) => s + p.planRevenue, 0);
+          const totalAll = totalAum + totalAnnuity + totalPlan;
+          const pctAum = totalAll > 0 ? totalAum / totalAll : 0;
+          const pctAnnuity = totalAll > 0 ? totalAnnuity / totalAll : 0;
+
+          // SVG donut helper
+          const donutR = 52;
+          const donutC = 2 * Math.PI * donutR;
+          const seg1 = donutC * pctAum;
+          const seg2 = donutC * pctAnnuity;
+          const seg3 = donutC - seg1 - seg2;
+
+          return (
+            <div>
+              {/* Horizon sub-tabs */}
+              <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
+                {(["1y", "2y", "5y", "10y"] as ProjectionHorizon[]).map(h => (
+                  <button key={h} onClick={() => setProjectionHorizon(h)} style={{
+                    padding: "7px 18px", borderRadius: 8, fontSize: 13, fontWeight: projectionHorizon === h ? 600 : 400, cursor: "pointer",
+                    background: projectionHorizon === h ? COLORS.accentMuted : COLORS.card,
+                    border: `1px solid ${projectionHorizon === h ? COLORS.accent : COLORS.border}`,
+                    color: projectionHorizon === h ? COLORS.accent : COLORS.textMuted,
+                    fontFamily: "inherit",
+                  }}>
+                    {{ "1y": "Year 1", "2y": "2 Years", "5y": "5 Years", "10y": "10 Years" }[h]}
+                  </button>
+                ))}
+              </div>
+
+              {/* KPI cards */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
+                {[
+                  { label: "Total Revenue", value: formatCurrency(lastYear.cumulativeRevenue), sub: `${visibleYears}yr cumulative`, color: COLORS.green },
+                  { label: "Total Ad Spend", value: formatCurrency(lastYear.cumulativeAdSpend), sub: `${formatCurrencyFull(d.fees.monthlyAdSpend)}/mo`, color: COLORS.red },
+                  { label: "Net ROI", value: formatCurrency(lastYear.cumulativeROI), sub: `${Math.round((lastYear.cumulativeRevenue / lastYear.cumulativeAdSpend) * 100) / 100}x return`, color: lastYear.cumulativeROI > 0 ? COLORS.green : COLORS.red },
+                  { label: "New Clients", value: `${lastYear.newClients * visibleYears}`, sub: `~${lastYear.newClients}/yr`, color: COLORS.accent },
+                ].map((kpi, i) => (
+                  <div key={i} style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "18px 20px" }}>
+                    <div style={{ fontSize: 11, color: COLORS.textDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>{kpi.label}</div>
+                    <div style={{ fontSize: 24, fontWeight: 700, color: kpi.color, marginBottom: 2 }}>{kpi.value}</div>
+                    <div style={{ fontSize: 12, color: COLORS.textMuted }}>{kpi.sub}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Charts row */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 16, marginBottom: 24 }}>
+
+                {/* Stacked bar chart */}
+                <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 24 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 600 }}>Revenue by Year</div>
+                      <div style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 2 }}>Stacked by revenue source</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 12 }}>
+                      {([["AUM Fees", barColors.aum], ["Annuity Comm.", barColors.annuity], ["Planning Fees", barColors.plan]] as const).map(([label, color]) => (
+                        <div key={label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: 2, background: color }} />
+                          <span style={{ fontSize: 11, color: COLORS.textMuted }}>{label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <svg width="100%" height={chartH + 40} viewBox={`0 0 ${projections.length * 80 + 40} ${chartH + 40}`} style={{ overflow: "visible" }}>
+                    {/* Y-axis grid lines */}
+                    {[0, 0.25, 0.5, 0.75, 1].map(pct => {
+                      const y = chartH - chartH * pct;
+                      const val = maxCumulativeRev > 0 ? Math.round((pct * (Math.max(...projections.map(p => p.totalRevenue)))) ) : 0;
+                      return (
+                        <g key={pct}>
+                          <line x1={40} x2={projections.length * 80 + 40} y1={y} y2={y} stroke={COLORS.border} strokeWidth={1} />
+                          {pct > 0 && <text x={36} y={y + 4} textAnchor="end" fill={COLORS.textDim} fontSize={10}>{formatCurrency(val)}</text>}
+                        </g>
+                      );
+                    })}
+                    {/* Bars */}
+                    {projections.map((p, i) => {
+                      const maxYearRev = Math.max(...projections.map(pr => pr.totalRevenue));
+                      const barW = 40;
+                      const x = 50 + i * 80;
+                      const aumH = maxYearRev > 0 ? (p.aumRevenue / maxYearRev) * chartH : 0;
+                      const annH = maxYearRev > 0 ? (p.annuityRevenue / maxYearRev) * chartH : 0;
+                      const planH = maxYearRev > 0 ? (p.planRevenue / maxYearRev) * chartH : 0;
+                      return (
+                        <g key={i}>
+                          {/* Plan (bottom) */}
+                          <rect x={x} y={chartH - planH} width={barW} height={Math.max(planH, 0)} rx={3} fill={barColors.plan} opacity={0.85} />
+                          {/* Annuity (middle) */}
+                          <rect x={x} y={chartH - planH - annH} width={barW} height={Math.max(annH, 0)} rx={0} fill={barColors.annuity} opacity={0.85} />
+                          {/* AUM (top) */}
+                          <rect x={x} y={chartH - planH - annH - aumH} width={barW} height={Math.max(aumH, 0)} rx={3} fill={barColors.aum} opacity={0.85} />
+                          {/* Label */}
+                          <text x={x + barW / 2} y={chartH + 18} textAnchor="middle" fill={COLORS.textMuted} fontSize={11}>Yr {p.year}</text>
+                          {/* Value on top */}
+                          <text x={x + barW / 2} y={chartH - planH - annH - aumH - 8} textAnchor="middle" fill={COLORS.textMuted} fontSize={10}>{formatCurrency(p.totalRevenue)}</text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                </div>
+
+                {/* Revenue mix donut */}
+                <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 24, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4, alignSelf: "flex-start" }}>Revenue Mix</div>
+                  <div style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 20, alignSelf: "flex-start" }}>{visibleYears}-year breakdown</div>
+
+                  <svg width={140} height={140} viewBox="0 0 140 140" style={{ marginBottom: 20 }}>
+                    <circle cx={70} cy={70} r={donutR} fill="none" stroke={barColors.aum} strokeWidth={14}
+                      strokeDasharray={`${seg1} ${donutC - seg1}`} strokeDashoffset={donutC * 0.25}
+                      style={{ transition: "stroke-dasharray 0.4s" }} />
+                    <circle cx={70} cy={70} r={donutR} fill="none" stroke={barColors.annuity} strokeWidth={14}
+                      strokeDasharray={`${seg2} ${donutC - seg2}`} strokeDashoffset={donutC * 0.25 - seg1}
+                      style={{ transition: "stroke-dasharray 0.4s" }} />
+                    <circle cx={70} cy={70} r={donutR} fill="none" stroke={barColors.plan} strokeWidth={14}
+                      strokeDasharray={`${seg3} ${donutC - seg3}`} strokeDashoffset={donutC * 0.25 - seg1 - seg2}
+                      style={{ transition: "stroke-dasharray 0.4s" }} />
+                    <text x={70} y={66} textAnchor="middle" fill={COLORS.text} fontSize={18} fontWeight={700}>{formatCurrency(totalAll)}</text>
+                    <text x={70} y={82} textAnchor="middle" fill={COLORS.textMuted} fontSize={10}>total</text>
+                  </svg>
+
+                  <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 10 }}>
+                    {[
+                      { label: "AUM Fees", amount: totalAum, color: barColors.aum, pct: Math.round(pctAum * 100) },
+                      { label: "Annuity Comm.", amount: totalAnnuity, color: barColors.annuity, pct: Math.round(pctAnnuity * 100) },
+                      { label: "Planning Fees", amount: totalPlan, color: barColors.plan, pct: Math.round((1 - pctAum - pctAnnuity) * 100) },
+                    ].map(item => (
+                      <div key={item.label}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: 2, background: item.color }} />
+                            <span style={{ fontSize: 12, color: COLORS.textMuted }}>{item.label}</span>
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 600 }}>{item.pct}%</span>
+                        </div>
+                        <div style={{ height: 4, borderRadius: 2, background: COLORS.border }}>
+                          <div style={{ width: `${item.pct}%`, height: "100%", borderRadius: 2, background: item.color, transition: "width 0.4s" }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Cumulative growth line chart */}
+              <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 24, marginBottom: 24 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 600 }}>Cumulative Growth</div>
+                    <div style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 2 }}>Revenue vs. ad spend over time</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <div style={{ width: 16, height: 3, borderRadius: 2, background: COLORS.green }} />
+                      <span style={{ fontSize: 11, color: COLORS.textMuted }}>Cumulative Revenue</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <div style={{ width: 16, height: 3, borderRadius: 2, background: COLORS.red }} />
+                      <span style={{ fontSize: 11, color: COLORS.textMuted }}>Cumulative Ad Spend</span>
+                    </div>
+                  </div>
+                </div>
+                {(() => {
+                  const lineW = 700;
+                  const lineH = 180;
+                  const maxVal = lastYear.cumulativeRevenue;
+                  const padL = 60;
+                  const padR = 20;
+                  const usableW = lineW - padL - padR;
+                  const stepX = projections.length > 1 ? usableW / (projections.length - 1) : usableW;
+
+                  const revPoints = projections.map((p, i) => `${padL + i * stepX},${lineH - (p.cumulativeRevenue / maxVal) * lineH}`).join(" ");
+                  const spendPoints = projections.map((p, i) => `${padL + i * stepX},${lineH - (p.cumulativeAdSpend / maxVal) * lineH}`).join(" ");
+                  // Fill area for revenue
+                  const revFill = `${padL},${lineH} ${revPoints} ${padL + (projections.length - 1) * stepX},${lineH}`;
+
+                  return (
+                    <svg width="100%" height={lineH + 30} viewBox={`0 0 ${lineW} ${lineH + 30}`} style={{ overflow: "visible" }}>
+                      {/* Grid */}
+                      {[0, 0.25, 0.5, 0.75, 1].map(pct => {
+                        const y = lineH - lineH * pct;
+                        return (
+                          <g key={pct}>
+                            <line x1={padL} x2={lineW - padR} y1={y} y2={y} stroke={COLORS.border} strokeWidth={1} />
+                            <text x={padL - 8} y={y + 4} textAnchor="end" fill={COLORS.textDim} fontSize={10}>{formatCurrency(Math.round(maxVal * pct))}</text>
+                          </g>
+                        );
+                      })}
+                      {/* Revenue fill */}
+                      <polygon points={revFill} fill={COLORS.green} opacity={0.07} />
+                      {/* Revenue line */}
+                      <polyline points={revPoints} fill="none" stroke={COLORS.green} strokeWidth={2.5} strokeLinejoin="round" />
+                      {/* Spend line */}
+                      <polyline points={spendPoints} fill="none" stroke={COLORS.red} strokeWidth={2} strokeDasharray="6 4" strokeLinejoin="round" />
+                      {/* Dots & labels */}
+                      {projections.map((p, i) => {
+                        const x = padL + i * stepX;
+                        const yRev = lineH - (p.cumulativeRevenue / maxVal) * lineH;
+                        const ySpend = lineH - (p.cumulativeAdSpend / maxVal) * lineH;
+                        return (
+                          <g key={i}>
+                            <circle cx={x} cy={yRev} r={4} fill={COLORS.green} />
+                            <circle cx={x} cy={ySpend} r={3} fill={COLORS.red} />
+                            <text x={x} y={lineH + 16} textAnchor="middle" fill={COLORS.textMuted} fontSize={11}>Yr {p.year}</text>
+                            {(i === projections.length - 1 || projections.length <= 5) && (
+                              <text x={x} y={yRev - 10} textAnchor="middle" fill={COLORS.green} fontSize={10} fontWeight={600}>{formatCurrency(p.cumulativeRevenue)}</text>
+                            )}
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  );
+                })()}
+              </div>
+
+              {/* Year-by-year breakdown table */}
+              <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 24 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>Year-by-Year Breakdown</div>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ borderBottom: `1px solid ${COLORS.border}` }}>
+                        {["Year", "New Clients", "AUM Revenue", "Annuity Comm.", "Plan Fees", "Total Revenue", "Ad Spend", "Net ROI"].map(h => (
+                          <th key={h} style={{ textAlign: h === "Year" ? "left" : "right", padding: "10px 12px", fontSize: 11, color: COLORS.textDim, textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {projections.map((p, i) => (
+                        <tr key={i} style={{ borderBottom: i < projections.length - 1 ? `1px solid ${COLORS.border}` : "none" }}>
+                          <td style={{ padding: "10px 12px", fontWeight: 600 }}>Year {p.year}</td>
+                          <td style={{ padding: "10px 12px", textAlign: "right", color: COLORS.textMuted }}>{p.newClients}</td>
+                          <td style={{ padding: "10px 12px", textAlign: "right", color: COLORS.accent }}>{formatCurrencyFull(p.aumRevenue)}</td>
+                          <td style={{ padding: "10px 12px", textAlign: "right", color: COLORS.green }}>{formatCurrencyFull(p.annuityRevenue)}</td>
+                          <td style={{ padding: "10px 12px", textAlign: "right", color: COLORS.purple }}>{formatCurrencyFull(p.planRevenue)}</td>
+                          <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{formatCurrencyFull(p.totalRevenue)}</td>
+                          <td style={{ padding: "10px 12px", textAlign: "right", color: COLORS.red }}>({formatCurrencyFull(p.adSpend)})</td>
+                          <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: p.netROI > 0 ? COLORS.green : COLORS.red }}>{p.netROI > 0 ? "+" : ""}{formatCurrencyFull(p.netROI)}</td>
+                        </tr>
+                      ))}
+                      {/* Totals row */}
+                      <tr style={{ borderTop: `2px solid ${COLORS.borderLight}`, background: COLORS.bg }}>
+                        <td style={{ padding: "12px 12px", fontWeight: 700 }}>Total</td>
+                        <td style={{ padding: "12px 12px", textAlign: "right", fontWeight: 600, color: COLORS.textMuted }}>{lastYear.newClients * visibleYears}</td>
+                        <td style={{ padding: "12px 12px", textAlign: "right", fontWeight: 600, color: COLORS.accent }}>{formatCurrencyFull(totalAum)}</td>
+                        <td style={{ padding: "12px 12px", textAlign: "right", fontWeight: 600, color: COLORS.green }}>{formatCurrencyFull(totalAnnuity)}</td>
+                        <td style={{ padding: "12px 12px", textAlign: "right", fontWeight: 600, color: COLORS.purple }}>{formatCurrencyFull(totalPlan)}</td>
+                        <td style={{ padding: "12px 12px", textAlign: "right", fontWeight: 700 }}>{formatCurrencyFull(lastYear.cumulativeRevenue)}</td>
+                        <td style={{ padding: "12px 12px", textAlign: "right", fontWeight: 600, color: COLORS.red }}>({formatCurrencyFull(lastYear.cumulativeAdSpend)})</td>
+                        <td style={{ padding: "12px 12px", textAlign: "right", fontWeight: 700, color: lastYear.cumulativeROI > 0 ? COLORS.green : COLORS.red }}>{lastYear.cumulativeROI > 0 ? "+" : ""}{formatCurrencyFull(lastYear.cumulativeROI)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Assumptions footnote */}
+              <div style={{ marginTop: 16, background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "16px 20px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 12 }}>📊</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: COLORS.textDim, textTransform: "uppercase", letterSpacing: "0.06em" }}>Projection Assumptions</span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                  {[
+                    { label: "Ad Spend", value: `${formatCurrencyFull(d.fees.monthlyAdSpend)}/mo` },
+                    { label: "Leads/Month", value: `${d.fees.leadsPerMonth} leads` },
+                    { label: "Close Rate", value: `${d.fees.leadToClientPct}%` },
+                    { label: "AUM Fee", value: `${d.fees.aumFeePct}%` },
+                    { label: "Avg Client AUM", value: formatCurrencyFull(d.fees.avgClientAUM) },
+                    { label: "Revenue Mix", value: `${d.fees.aumMixPct}% AUM / ${d.fees.annuityMixPct}% Annuity` },
+                    { label: "Avg Annuity Comm.", value: formatCurrencyFull(d.fees.annuityAvgCommission) },
+                    { label: "Financial Plan Fee", value: formatCurrencyFull(d.fees.financialPlanAvgPrice) },
+                    { label: "Plan Attach Rate", value: `${d.fees.planAttachRate}%` },
+                  ].map((a, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                      <span style={{ color: COLORS.textDim }}>{a.label}</span>
+                      <span style={{ color: COLORS.textMuted, fontWeight: 500 }}>{a.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Strategy Rationale */}
         <div style={{ marginTop: 28, background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 24 }}>

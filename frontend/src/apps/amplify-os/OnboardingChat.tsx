@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../../components/ThemeProvider";
 
 /* ── Web Speech API types ── */
 
@@ -597,6 +598,7 @@ const STEP_LABELS: Record<string, string> = {
 /* ── Component ── */
 
 export default function OnboardingChat() {
+  const { dark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -988,6 +990,13 @@ export default function OnboardingChat() {
             </div>
             <span className="obc-progress-label">{progress}%</span>
           </div>
+          <button onClick={toggleTheme} style={{ background: "transparent", border: "1px solid var(--app-border)", borderRadius: 8, padding: "8px 10px", cursor: "pointer", color: "var(--app-text-secondary)", display: "flex", alignItems: "center" }}>
+            {dark ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            )}
+          </button>
           <button
             className="obc-dev-skip"
             onClick={() => setCurrentStep(STEPS.length - 1)}
@@ -1496,8 +1505,8 @@ export default function OnboardingChat() {
         .obc-root {
           height: 100vh;
           display: flex;
-          background: #0a0a0a;
-          color: #ededed;
+          background: var(--app-bg);
+          color: var(--app-text);
           font-family: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
           overflow: hidden;
           -webkit-font-smoothing: antialiased;
@@ -1517,7 +1526,7 @@ export default function OnboardingChat() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          border-bottom: 1px solid #1f1f1f;
+          border-bottom: 1px solid var(--app-border);
         }
         .obc-header-left {
           display: flex;
@@ -1528,23 +1537,23 @@ export default function OnboardingChat() {
           width: 36px;
           height: 36px;
           border-radius: 8px;
-          background: #ededed;
+          background: var(--app-text);
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 16px;
           font-weight: 700;
-          color: #0a0a0a;
+          color: var(--app-bg);
         }
         .obc-title {
           font-size: 14px;
           font-weight: 500;
-          color: #ededed;
+          color: var(--app-text);
           letter-spacing: -0.01em;
         }
         .obc-subtitle {
           font-size: 12px;
-          color: #666;
+          color: var(--app-text-muted);
           margin-top: 1px;
         }
         .obc-progress-wrap {
@@ -1556,18 +1565,18 @@ export default function OnboardingChat() {
           width: 140px;
           height: 2px;
           border-radius: 1px;
-          background: #1f1f1f;
+          background: var(--app-border);
           overflow: hidden;
         }
         .obc-progress-fill {
           height: 100%;
           border-radius: 1px;
-          background: #ededed;
+          background: var(--app-text);
           transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .obc-progress-label {
           font-size: 11px;
-          color: #666;
+          color: var(--app-text-muted);
           font-variant-numeric: tabular-nums;
           min-width: 28px;
           text-align: right;
@@ -1575,9 +1584,9 @@ export default function OnboardingChat() {
         .obc-dev-skip {
           padding: 6px 14px;
           border-radius: 6px;
-          border: 1px dashed #555;
+          border: 1px dashed var(--app-text-dim);
           background: transparent;
-          color: #888;
+          color: var(--app-text-secondary);
           font-size: 11px;
           cursor: pointer;
           transition: all 0.15s;
@@ -1585,8 +1594,8 @@ export default function OnboardingChat() {
           margin-left: 12px;
         }
         .obc-dev-skip:hover {
-          border-color: #888;
-          color: #ededed;
+          border-color: var(--app-text-secondary);
+          color: var(--app-text);
         }
 
         /* ── Messages ── */
@@ -1611,8 +1620,8 @@ export default function OnboardingChat() {
           width: 30px;
           height: 30px;
           border-radius: 50%;
-          background: #ededed;
-          color: #0a0a0a;
+          background: var(--app-text);
+          color: var(--app-bg);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1626,14 +1635,14 @@ export default function OnboardingChat() {
           width: 30px;
           height: 30px;
           border-radius: 50%;
-          background: #1a1a1a;
+          background: var(--app-border-subtle);
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
           margin-right: 12px;
           margin-top: 2px;
-          color: #666;
+          color: var(--app-text-muted);
         }
         .obc-sys-icon--done {
           background: rgba(80, 227, 194, 0.1);
@@ -1648,15 +1657,15 @@ export default function OnboardingChat() {
         }
         .obc-bubble--ai {
           padding: 14px 18px;
-          background: #1a1a1a;
-          border: 1px solid #2e2e2e;
+          background: var(--app-border-subtle);
+          border: 1px solid var(--app-border-hover);
           border-radius: 16px 16px 16px 4px;
         }
         .obc-bubble--user {
           padding: 14px 18px;
-          background: #ededed;
+          background: var(--app-text);
           border-radius: 16px 16px 4px 16px;
-          color: #0a0a0a;
+          color: var(--app-bg);
           position: relative;
         }
         .obc-edit-row {
@@ -1680,7 +1689,7 @@ export default function OnboardingChat() {
           gap: 4px;
           background: none;
           border: none;
-          color: #555;
+          color: var(--app-text-dim);
           font-size: 11px;
           cursor: pointer;
           padding: 2px 8px;
@@ -1688,7 +1697,7 @@ export default function OnboardingChat() {
           transition: color 0.15s;
         }
         .obc-edit-link:hover {
-          color: #ededed;
+          color: var(--app-text);
         }
         .obc-edit-wrap {
           display: flex;
@@ -1699,9 +1708,9 @@ export default function OnboardingChat() {
         .obc-edit-input {
           padding: 12px 16px;
           border-radius: 12px;
-          border: 2px solid #ededed;
-          background: #1a1a1a;
-          color: #ededed;
+          border: 2px solid var(--app-text);
+          background: var(--app-border-subtle);
+          color: var(--app-text);
           font-size: 14px;
           font-family: inherit;
           line-height: 1.5;
@@ -1730,19 +1739,19 @@ export default function OnboardingChat() {
           transition: background 0.15s;
         }
         .obc-edit-btn--save {
-          background: #ededed;
-          color: #0a0a0a;
+          background: var(--app-text);
+          color: var(--app-bg);
         }
         .obc-edit-btn--save:hover {
           background: #d4d4d4;
         }
         .obc-edit-btn--cancel {
           background: transparent;
-          color: #666;
-          border: 1px solid #2e2e2e;
+          color: var(--app-text-muted);
+          border: 1px solid var(--app-border-hover);
         }
         .obc-edit-btn--cancel:hover {
-          color: #ededed;
+          color: var(--app-text);
           border-color: #444;
         }
         .obc-goback-wrap {
@@ -1758,7 +1767,7 @@ export default function OnboardingChat() {
           gap: 4px;
           background: none;
           border: none;
-          color: #555;
+          color: var(--app-text-dim);
           font-size: 12px;
           cursor: pointer;
           padding: 4px 8px;
@@ -1766,13 +1775,13 @@ export default function OnboardingChat() {
           transition: color 0.15s, background 0.15s;
         }
         .obc-goback-btn:hover {
-          color: #ededed;
+          color: var(--app-text);
           background: rgba(237, 237, 237, 0.06);
         }
         .obc-bubble--system {
           padding: 6px 0;
           background: transparent;
-          color: #666;
+          color: var(--app-text-muted);
           font-size: 13px;
         }
         .obc-bubble--done {
@@ -1782,8 +1791,8 @@ export default function OnboardingChat() {
         .obc-spinner-sm {
           width: 14px;
           height: 14px;
-          border: 2px solid #333;
-          border-top-color: #888;
+          border: 2px solid var(--app-text-faint);
+          border-top-color: var(--app-text-secondary);
           border-radius: 50%;
           animation: spin 0.7s linear infinite;
         }
@@ -1799,7 +1808,7 @@ export default function OnboardingChat() {
           width: 5px;
           height: 5px;
           border-radius: 50%;
-          background: #555;
+          background: var(--app-text-dim);
           animation: dotPulse 1.4s ease-in-out infinite;
         }
         .obc-dots span:nth-child(2) { animation-delay: 0.2s; }
@@ -1836,7 +1845,7 @@ export default function OnboardingChat() {
           opacity: 0.15;
         }
         .obc-gen-grid-cell {
-          background: #1f1f1f;
+          background: var(--app-border);
           animation: obc-gen-cell-pulse 3s ease-in-out infinite;
         }
         @keyframes obc-gen-cell-pulse {
@@ -1867,7 +1876,7 @@ export default function OnboardingChat() {
           position: absolute;
           inset: 22px;
           border-radius: 50%;
-          background: #ededed;
+          background: var(--app-text);
           animation: obc-gen-core-pulse 2s ease-in-out infinite;
         }
         @keyframes obc-gen-core-pulse {
@@ -1911,7 +1920,7 @@ export default function OnboardingChat() {
           align-items: center;
           gap: 10px;
           font-size: 13px;
-          color: #333;
+          color: var(--app-text-faint);
           transition: all 0.4s ease;
           height: 0;
           overflow: hidden;
@@ -1919,12 +1928,12 @@ export default function OnboardingChat() {
           margin: 0;
         }
         .obc-gen-step--active {
-          color: #ededed;
+          color: var(--app-text);
           height: 24px;
           opacity: 1;
         }
         .obc-gen-step--done {
-          color: #555;
+          color: var(--app-text-dim);
           height: 22px;
           opacity: 1;
           font-size: 12px;
@@ -1938,18 +1947,18 @@ export default function OnboardingChat() {
           flex-shrink: 0;
         }
         .obc-gen-step-indicator svg {
-          color: #555;
+          color: var(--app-text-dim);
         }
         .obc-gen-step-dot {
           display: block;
           width: 6px;
           height: 6px;
           border-radius: 50%;
-          background: #ededed;
+          background: var(--app-text);
           animation: obc-gen-dot-pulse 1s ease-in-out infinite;
         }
         .obc-gen-step-dot--idle {
-          background: #333;
+          background: var(--app-text-faint);
           animation: none;
         }
         @keyframes obc-gen-dot-pulse {
@@ -1961,19 +1970,19 @@ export default function OnboardingChat() {
         .obc-gen-progress-track {
           width: 100%;
           height: 3px;
-          background: #1f1f1f;
+          background: var(--app-border);
           border-radius: 2px;
           overflow: hidden;
         }
         .obc-gen-progress-fill {
           height: 100%;
-          background: linear-gradient(90deg, #555, #ededed);
+          background: linear-gradient(90deg, var(--app-text-dim), var(--app-text));
           border-radius: 2px;
           transition: width 0.15s linear;
         }
         .obc-gen-percent {
           font-size: 12px;
-          color: #555;
+          color: var(--app-text-dim);
           font-variant-numeric: tabular-nums;
           margin: -16px 0 0;
         }
@@ -1989,7 +1998,7 @@ export default function OnboardingChat() {
           font-size: 11px;
           color: #444;
           background: #141414;
-          border: 1px solid #1f1f1f;
+          border: 1px solid var(--app-border);
           border-radius: 4px;
           padding: 4px 10px;
           animation: obc-gen-ticker-in 0.4s ease;
@@ -2001,7 +2010,7 @@ export default function OnboardingChat() {
 
         /* ── Input area ── */
         .obc-input-area {
-          border-top: 1px solid #1f1f1f;
+          border-top: 1px solid var(--app-border);
           padding: 0 32px 24px;
         }
         .obc-input-inner {
@@ -2022,7 +2031,7 @@ export default function OnboardingChat() {
         .obc-chip {
           padding: 10px 18px;
           border-radius: 8px;
-          border: 1px solid #2e2e2e;
+          border: 1px solid var(--app-border-hover);
           background: transparent;
           color: #a1a1a1;
           cursor: pointer;
@@ -2034,18 +2043,18 @@ export default function OnboardingChat() {
         }
         .obc-chip:hover {
           border-color: #444;
-          background: #1a1a1a;
-          color: #ededed;
+          background: var(--app-border-subtle);
+          color: var(--app-text);
         }
         .obc-chip--selected {
-          border-color: #ededed;
-          background: #1a1a1a;
-          color: #ededed;
+          border-color: var(--app-text);
+          background: var(--app-border-subtle);
+          color: var(--app-text);
         }
         .obc-chip--single:hover {
-          border-color: #ededed;
-          background: #1a1a1a;
-          color: #ededed;
+          border-color: var(--app-text);
+          background: var(--app-border-subtle);
+          color: var(--app-text);
           transform: translateY(-1px);
         }
         .obc-chip-label {
@@ -2054,10 +2063,10 @@ export default function OnboardingChat() {
         }
         .obc-chip-desc {
           font-size: 12px;
-          color: #666;
+          color: var(--app-text-muted);
         }
         .obc-chip--selected .obc-chip-desc {
-          color: #888;
+          color: var(--app-text-secondary);
         }
 
         /* ── Buttons ── */
@@ -2074,8 +2083,8 @@ export default function OnboardingChat() {
         }
         .obc-btn--primary {
           padding: 8px 16px;
-          background: #ededed;
-          color: #0a0a0a;
+          background: var(--app-text);
+          color: var(--app-bg);
           font-size: 14px;
         }
         .obc-btn--primary:hover {
@@ -2084,13 +2093,13 @@ export default function OnboardingChat() {
         .obc-btn--secondary {
           padding: 8px 16px;
           background: transparent;
-          border: 1px solid #333;
+          border: 1px solid var(--app-text-faint);
           color: #a1a1a1;
           font-size: 14px;
         }
         .obc-btn--secondary:hover {
-          border-color: #555;
-          color: #ededed;
+          border-color: var(--app-text-dim);
+          color: var(--app-text);
         }
         .obc-btn--lg {
           padding: 10px 24px;
@@ -2111,17 +2120,17 @@ export default function OnboardingChat() {
           font-weight: 600;
           letter-spacing: -0.03em;
           font-variant-numeric: tabular-nums;
-          color: #ededed;
+          color: var(--app-text);
         }
         .obc-range-sep {
           font-size: 14px;
-          color: #555;
+          color: var(--app-text-dim);
           font-weight: 400;
           padding: 0 2px;
         }
         .obc-range-unit {
           font-size: 14px;
-          color: #555;
+          color: var(--app-text-dim);
           margin-left: 4px;
         }
         .obc-dual-track-wrap {
@@ -2130,7 +2139,7 @@ export default function OnboardingChat() {
         .obc-dual-track {
           position: relative;
           height: 4px;
-          background: #2e2e2e;
+          background: var(--app-border-hover);
           border-radius: 2px;
           cursor: pointer;
           touch-action: none;
@@ -2139,7 +2148,7 @@ export default function OnboardingChat() {
           position: absolute;
           top: 0;
           height: 100%;
-          background: #ededed;
+          background: var(--app-text);
           border-radius: 2px;
           pointer-events: none;
         }
@@ -2149,7 +2158,7 @@ export default function OnboardingChat() {
           width: 20px;
           height: 20px;
           border-radius: 50%;
-          background: #ededed;
+          background: var(--app-text);
           transform: translate(-50%, -50%);
           cursor: grab;
           box-shadow: 0 0 0 1px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.4);
@@ -2180,12 +2189,12 @@ export default function OnboardingChat() {
         }
         .obc-slider-labels span {
           font-size: 13px;
-          color: #555;
+          color: var(--app-text-dim);
           font-weight: 500;
           transition: color 0.2s;
         }
         .obc-slider-label--active {
-          color: #ededed !important;
+          color: var(--app-text) !important;
         }
         .obc-slider-input {
           width: 100%;
@@ -2193,10 +2202,10 @@ export default function OnboardingChat() {
         }
         .obc-slider-desc {
           font-size: 13px;
-          color: #888;
+          color: var(--app-text-secondary);
           padding: 12px 16px;
-          background: #1a1a1a;
-          border: 1px solid #2e2e2e;
+          background: var(--app-border-subtle);
+          border: 1px solid var(--app-border-hover);
           border-radius: 8px;
           margin-bottom: 14px;
           line-height: 1.5;
@@ -2216,7 +2225,7 @@ export default function OnboardingChat() {
         }
         .obc-glide-value {
           font-size: 13px;
-          color: #666;
+          color: var(--app-text-muted);
           font-variant-numeric: tabular-nums;
         }
         .obc-glide-track-wrap {
@@ -2228,7 +2237,7 @@ export default function OnboardingChat() {
           width: 100%;
           height: 6px;
           border-radius: 3px;
-          background: linear-gradient(to right, var(--glide-color) 0%, var(--glide-color) var(--glide-pct), #2e2e2e var(--glide-pct), #2e2e2e 100%);
+          background: linear-gradient(to right, var(--glide-color) 0%, var(--glide-color) var(--glide-pct), var(--app-border-hover) var(--glide-pct), var(--app-border-hover) 100%);
           outline: none;
           margin-bottom: 8px;
           transition: background 0.15s;
@@ -2238,7 +2247,7 @@ export default function OnboardingChat() {
           width: 20px;
           height: 20px;
           border-radius: 50%;
-          background: #ededed;
+          background: var(--app-text);
           cursor: pointer;
           box-shadow: 0 0 0 1px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.4);
           transition: box-shadow 0.15s;
@@ -2253,7 +2262,7 @@ export default function OnboardingChat() {
         }
         .obc-glide-tick-label {
           font-size: 10px;
-          color: #555;
+          color: var(--app-text-dim);
           font-weight: 500;
           text-transform: uppercase;
           letter-spacing: 0.5px;
@@ -2262,8 +2271,8 @@ export default function OnboardingChat() {
           font-size: 13px;
           color: #999;
           padding: 14px 16px;
-          background: #111;
-          border: 1px solid #2e2e2e;
+          background: var(--app-surface);
+          border: 1px solid var(--app-border-hover);
           border-radius: 10px;
           margin-bottom: 14px;
           line-height: 1.6;
@@ -2284,9 +2293,9 @@ export default function OnboardingChat() {
           min-height: 90px;
           padding: 16px;
           border-radius: 8px;
-          border: 1px solid #2e2e2e;
-          background: #0a0a0a;
-          color: #ededed;
+          border: 1px solid var(--app-border-hover);
+          background: var(--app-bg);
+          color: var(--app-text);
           font-size: 14px;
           line-height: 1.6;
           resize: vertical;
@@ -2296,7 +2305,7 @@ export default function OnboardingChat() {
         }
         .obc-textarea:focus {
           outline: none;
-          border-color: #ededed;
+          border-color: var(--app-text);
         }
 
         /* ── Currency input ── */
@@ -2304,26 +2313,26 @@ export default function OnboardingChat() {
           display: flex;
           align-items: center;
           gap: 4px;
-          background: #0a0a0a;
-          border: 1px solid #2e2e2e;
+          background: var(--app-bg);
+          border: 1px solid var(--app-border-hover);
           border-radius: 10px;
           padding: 14px 18px;
           transition: border-color 0.2s;
         }
         .obc-currency-wrap:focus-within {
-          border-color: #ededed;
+          border-color: var(--app-text);
         }
         .obc-currency-symbol {
           font-size: 22px;
           font-weight: 600;
-          color: #888;
+          color: var(--app-text-secondary);
         }
         .obc-currency-input {
           flex: 1;
           background: transparent;
           border: none;
           outline: none;
-          color: #ededed;
+          color: var(--app-text);
           font-size: 22px;
           font-weight: 600;
           font-family: inherit;
@@ -2345,14 +2354,14 @@ export default function OnboardingChat() {
         .obc-pct-value {
           font-size: 36px;
           font-weight: 700;
-          color: #ededed;
+          color: var(--app-text);
           letter-spacing: -1px;
           font-variant-numeric: tabular-nums;
         }
         .obc-pct-symbol {
           font-size: 20px;
           font-weight: 600;
-          color: #888;
+          color: var(--app-text-secondary);
         }
         .obc-pct-slider-wrap {
           margin-bottom: 4px;
@@ -2364,7 +2373,7 @@ export default function OnboardingChat() {
           display: flex;
           justify-content: space-between;
           font-size: 11px;
-          color: #666;
+          color: var(--app-text-muted);
           margin-top: 4px;
         }
 
@@ -2378,7 +2387,7 @@ export default function OnboardingChat() {
           animation: fadeUp 0.25s ease;
         }
         .obc-dropzone {
-          border: 1px dashed #333;
+          border: 1px dashed var(--app-text-faint);
           border-radius: 8px;
           padding: 36px 24px;
           text-align: center;
@@ -2387,8 +2396,8 @@ export default function OnboardingChat() {
           transition: all 0.2s;
         }
         .obc-dropzone:hover {
-          border-color: #555;
-          background: #111;
+          border-color: var(--app-text-dim);
+          background: var(--app-surface);
         }
         .obc-dropzone-close {
           position: absolute;
@@ -2398,8 +2407,8 @@ export default function OnboardingChat() {
           height: 28px;
           border-radius: 50%;
           border: none;
-          background: #1a1a1a;
-          color: #666;
+          background: var(--app-border-subtle);
+          color: var(--app-text-muted);
           font-size: 18px;
           cursor: pointer;
           display: flex;
@@ -2415,12 +2424,12 @@ export default function OnboardingChat() {
           width: 48px;
           height: 48px;
           border-radius: 50%;
-          background: #1a1a1a;
+          background: var(--app-border-subtle);
           display: flex;
           align-items: center;
           justify-content: center;
           margin: 0 auto 14px;
-          color: #666;
+          color: var(--app-text-muted);
         }
         .obc-dropzone-title {
           font-size: 14px;
@@ -2430,7 +2439,7 @@ export default function OnboardingChat() {
         }
         .obc-dropzone-sub {
           font-size: 13px;
-          color: #555;
+          color: var(--app-text-dim);
         }
         .obc-dropzone-hint {
           font-size: 12px;
@@ -2442,14 +2451,14 @@ export default function OnboardingChat() {
         .obc-inputbar {
           display: flex;
           align-items: center;
-          background: #0a0a0a;
-          border: 1px solid #2e2e2e;
+          background: var(--app-bg);
+          border: 1px solid var(--app-border-hover);
           border-radius: 8px;
           padding: 4px 6px;
           transition: border-color 0.2s;
         }
         .obc-inputbar:focus-within {
-          border-color: #555;
+          border-color: var(--app-text-dim);
         }
         .obc-inputbar-icon {
           width: 36px;
@@ -2457,7 +2466,7 @@ export default function OnboardingChat() {
           border-radius: 6px;
           border: none;
           background: transparent;
-          color: #555;
+          color: var(--app-text-dim);
           cursor: pointer;
           display: flex;
           align-items: center;
@@ -2469,7 +2478,7 @@ export default function OnboardingChat() {
           color: #a1a1a1;
         }
         .obc-inputbar-icon--active {
-          color: #ededed;
+          color: var(--app-text);
         }
         .obc-mic--active {
           color: #ef4444;
@@ -2479,7 +2488,7 @@ export default function OnboardingChat() {
           flex: 1;
           background: transparent;
           border: none;
-          color: #ededed;
+          color: var(--app-text);
           font-size: 14px;
           outline: none;
           padding: 10px 8px;
@@ -2493,7 +2502,7 @@ export default function OnboardingChat() {
           height: 36px;
           border-radius: 6px;
           border: none;
-          background: #1a1a1a;
+          background: var(--app-border-subtle);
           color: #444;
           cursor: default;
           display: flex;
@@ -2503,8 +2512,8 @@ export default function OnboardingChat() {
           flex-shrink: 0;
         }
         .obc-send--active {
-          background: #ededed;
-          color: #0a0a0a;
+          background: var(--app-text);
+          color: var(--app-bg);
           cursor: pointer;
         }
         .obc-send--active:hover {
@@ -2513,7 +2522,7 @@ export default function OnboardingChat() {
 
         /* ── Welcome CTA ── */
         .obc-welcome-cta {
-          border-top: 1px solid #1f1f1f;
+          border-top: 1px solid var(--app-border);
           padding: 24px 32px;
           display: flex;
           justify-content: flex-start;
@@ -2522,7 +2531,7 @@ export default function OnboardingChat() {
         /* ── Sidebar ── */
         .obc-sidebar {
           width: 280px;
-          border-left: 1px solid #1f1f1f;
+          border-left: 1px solid var(--app-border);
           background: #000;
           display: flex;
           flex-direction: column;
@@ -2530,12 +2539,12 @@ export default function OnboardingChat() {
         }
         .obc-sidebar-header {
           padding: 18px 24px;
-          border-bottom: 1px solid #1f1f1f;
+          border-bottom: 1px solid var(--app-border);
           font-size: 12px;
           font-weight: 500;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          color: #555;
+          color: var(--app-text-dim);
         }
         .obc-sidebar-body {
           flex: 1;
@@ -2546,12 +2555,12 @@ export default function OnboardingChat() {
           font-size: 14px;
           font-weight: 500;
           margin-bottom: 10px;
-          color: #ededed;
+          color: var(--app-text);
           letter-spacing: -0.01em;
         }
         .obc-context p {
           font-size: 13px;
-          color: #666;
+          color: var(--app-text-muted);
           line-height: 1.7;
         }
 
@@ -2559,14 +2568,14 @@ export default function OnboardingChat() {
         .obc-steps-list {
           margin-top: 28px;
           padding-top: 24px;
-          border-top: 1px solid #1f1f1f;
+          border-top: 1px solid var(--app-border);
         }
         .obc-steps-label {
           font-size: 12px;
           font-weight: 500;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          color: #555;
+          color: var(--app-text-dim);
           margin-bottom: 14px;
         }
         .obc-section-group {
@@ -2583,18 +2592,18 @@ export default function OnboardingChat() {
           transition: color 0.2s;
         }
         .obc-section--current .obc-section-header {
-          color: #ededed;
+          color: var(--app-text);
           font-weight: 500;
         }
         .obc-section--done .obc-section-header {
-          color: #666;
+          color: var(--app-text-muted);
         }
         .obc-section-label {
           flex: 1;
         }
         .obc-section-count {
           font-size: 11px;
-          color: #555;
+          color: var(--app-text-dim);
           font-variant-numeric: tabular-nums;
         }
         .obc-step-dot {
@@ -2605,11 +2614,11 @@ export default function OnboardingChat() {
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
-          border: 1px solid #2e2e2e;
+          border: 1px solid var(--app-border-hover);
           transition: all 0.2s;
         }
         .obc-section--current .obc-step-dot {
-          border-color: #ededed;
+          border-color: var(--app-text);
           background: rgba(237, 237, 237, 0.1);
         }
         .obc-section--done .obc-step-dot {
@@ -2623,7 +2632,7 @@ export default function OnboardingChat() {
           -webkit-appearance: none;
           appearance: none;
           height: 2px;
-          background: #2e2e2e;
+          background: var(--app-border-hover);
           border-radius: 1px;
           outline: none;
         }
@@ -2632,7 +2641,7 @@ export default function OnboardingChat() {
           width: 16px;
           height: 16px;
           border-radius: 50%;
-          background: #ededed;
+          background: var(--app-text);
           cursor: pointer;
           box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
         }
@@ -2640,10 +2649,10 @@ export default function OnboardingChat() {
         /* ── Scrollbar ── */
         .obc-messages::-webkit-scrollbar { width: 6px; }
         .obc-messages::-webkit-scrollbar-track { background: transparent; }
-        .obc-messages::-webkit-scrollbar-thumb { background: #1f1f1f; border-radius: 3px; }
+        .obc-messages::-webkit-scrollbar-thumb { background: var(--app-border); border-radius: 3px; }
         .obc-sidebar-body::-webkit-scrollbar { width: 4px; }
         .obc-sidebar-body::-webkit-scrollbar-track { background: transparent; }
-        .obc-sidebar-body::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 2px; }
+        .obc-sidebar-body::-webkit-scrollbar-thumb { background: var(--app-border-subtle); border-radius: 2px; }
 
         /* ── Animations ── */
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

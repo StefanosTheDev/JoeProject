@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../../components/ThemeProvider";
 
 // ── Type Definitions ──
 
@@ -38,7 +39,7 @@ const campaignData = {
 const categories: Category[] = [
   {
     id: "webinar",
-    label: "Webinar / VSL Script",
+    label: "Webinar Script",
     order: 1,
     status: "in_progress",
     description: "The destination. Everything drives here. Script your core educational content first — ads, funnels, and sequences all flow from this.",
@@ -49,7 +50,6 @@ const categories: Category[] = [
       { id: "w3", title: "Topic 2: Social Security Optimization", status: "in_review", duration: "12:00 – 20:00", content: "\"The second biggest mistake I see is claiming Social Security at the wrong time. And I don't mean a little wrong — I mean leaving $100,000 or more on the table over your lifetime.\n\nThere are 567 different rules governing Social Security benefits. And the claiming decision intersects with everything else in your financial life — your tax strategy, your spouse's benefits, your pension, your healthcare coverage before Medicare kicks in.\n\nLet me walk you through three scenarios...\"", why: "Social Security is universally relevant to this ICP. The $100K figure creates urgency. Mentioning 567 rules positions professional help as necessary, not optional." },
       { id: "w4", title: "Topic 3: The Retirement Paycheck", status: "generating", duration: "20:00 – 28:00", content: null, why: "This section ties everything together — how to create predictable income from multiple sources (SS, IRA, Roth, pension, taxable accounts) while minimizing lifetime taxes." },
       { id: "w5", title: "CTA + Objection Handling", status: "not_started", duration: "28:00 – 32:00", content: null, why: "The transition from education to offer. Must feel natural, not salesy. Addresses top objections." },
-      { id: "w6", title: "Pre-Webinar VSL (Short Version)", status: "not_started", duration: "2–3 min standalone", content: null, why: "Shown on the registration confirmation page. Captures high-intent prospects who want to book immediately." },
     ],
   },
   {
@@ -57,7 +57,7 @@ const categories: Category[] = [
     label: "Ad Scripts",
     order: 2,
     status: "in_progress",
-    description: "Traffic drivers. Scripted AFTER the webinar so messaging aligns with the destination. UGC-style: Hook — Relate — Educate — CTA.",
+    description: "Traffic drivers. Scripted after the webinar so messaging aligns with the destination. UGC-style: Hook — Relate — Educate — CTA.",
     progress: 40,
     sections: [
       { id: "a1", title: "Tax Time Bomb (SS Angle)", status: "approved", type: "UGC", content: "\"HOOK: Most retirees think their biggest risk is the stock market. It's not. The IRS is quietly taking more of your money than you realize.\n\nRELATE: If you've been saving into a 401(k) or traditional IRA for the last 20 or 30 years, you probably feel pretty good about that balance. But here's what your HR department never told you — every single dollar in that account has a tax bill attached to it.\n\nEDUCATE: There's a strategy called a Roth conversion ladder that lets you move money from your traditional IRA to a Roth IRA at a lower tax rate — but only if you do it during a specific window.\n\nCTA: I put together a free 30-minute training that walks through exactly how this works with real numbers. Link's in the bio.\"", why: "Leads with the contrarian hook from the webinar. The Roth conversion ladder is the core educational takeaway." },
@@ -68,31 +68,44 @@ const categories: Category[] = [
     ],
   },
   {
-    id: "sequences",
-    label: "Email / SMS Sequences",
+    id: "vsl",
+    label: "Pre-Webinar VSL",
     order: 3,
     status: "in_progress",
-    description: "The follow-up engine. Nurture new leads, confirm appointments, recover no-shows, and drip long-term value to stay top of mind.",
+    description: "A short, high-conversion video shown on the registration confirmation page and in follow-up emails. Captures high-intent prospects who want to book immediately without waiting for the webinar.",
+    progress: 20,
+    sections: [
+      { id: "v1", title: "Hook + Credibility", status: "in_review", duration: "0:00 – 0:30", content: "\"If you're watching this, you just registered for my free training on retirement tax strategies — and I want to make sure you actually show up, because what I'm about to share could save you $100,000 or more.\n\nI'm David Mitchell. I'm a CFP® and CPA, and for the last 15 years I've helped people in Denver navigate the transition into retirement without getting crushed by taxes.\"", why: "Immediate validation of their registration decision. Credentials build trust fast in a short format." },
+      { id: "v2", title: "Preview + Urgency", status: "not_started", duration: "0:30 – 1:30", content: null, why: "Tease the 3 key topics from the webinar without giving away the full content. Create a reason to watch the full training." },
+      { id: "v3", title: "CTA — Book Now or Watch", status: "not_started", duration: "1:30 – 2:30", content: null, why: "Dual CTA: watch the full training, or skip straight to booking a Retirement Readiness Review for high-intent prospects." },
+    ],
+  },
+  {
+    id: "sequences",
+    label: "Email / SMS Sequences",
+    order: 4,
+    status: "in_progress",
+    description: "The follow-up engine. Nurture new leads, recover no-shows, and drip long-term value to stay top of mind.",
     progress: 30,
     sections: [
       { id: "s1", title: "New Lead Nurture", status: "approved", messages: 6, timeline: "14 days", content: "\"EMAIL 1 — Sent immediately after registration:\nSubject: Your training is ready — here's what to expect\n\nHi [First Name],\n\nThanks for registering. Your training is ready to watch anytime.\n\n→ Watch now: [link]\n\n---\n\nEMAIL 2 — Day 2:\nSubject: The IRA math most people get wrong\n\nQuick question: if you have $1 million in a traditional IRA, how much of that is actually yours?\n\n---\n\nEMAIL 3-6: Continue with SS-focused value, case study, soft pitch, final value-driven email.\"", why: "First touch after registration. Each email delivers standalone value while building toward a booking." },
-      { id: "s2", title: "Appointment Confirmation", status: "in_review", messages: 3, timeline: "Booking to Meeting", content: "\"EMAIL 1 — Immediately after booking:\nSubject: You're confirmed — here's how to prepare\n\nEMAIL 2 — 24 hours before:\nSubject: Quick reminder — we meet tomorrow\n\nEMAIL 3 — 1 hour before:\nSubject: See you in 1 hour\"", why: "Confirm, prepare, remind. Setting expectations reduces anxiety and increases show rates." },
-      { id: "s3", title: "Show-Up Sequence", status: "not_started", messages: 3, timeline: "24hrs before", content: null, why: "Pre-meeting prep via SMS. Sets expectations, builds anticipation." },
-      { id: "s4", title: "No-Show Recovery", status: "not_started", messages: 3, timeline: "48hrs post", content: null, why: "Re-engage without being pushy. Offer to reschedule, acknowledge life happens." },
-      { id: "s5", title: "Long-Term Nurture", status: "not_started", messages: 10, timeline: "90 days", content: null, why: "For leads who don't book. Drip value, case studies, social proof over 90 days." },
+      { id: "s2", title: "Show-Up Sequence", status: "not_started", messages: 3, timeline: "24hrs before", content: null, why: "Pre-meeting prep via SMS. Sets expectations, builds anticipation." },
+      { id: "s3", title: "No-Show Recovery", status: "not_started", messages: 3, timeline: "48hrs post", content: null, why: "Re-engage without being pushy. Offer to reschedule, acknowledge life happens." },
+      { id: "s4", title: "Long-Term Nurture", status: "not_started", messages: 10, timeline: "90 days", content: null, why: "For leads who don't book. Drip value, case studies, social proof over 90 days." },
     ],
   },
   {
     id: "confirmation_video",
     label: "Appointment Confirmation Video",
-    order: 4,
+    order: 5,
     status: "in_progress",
-    description: "A personalized video sent after someone books an appointment. Builds trust, sets expectations for the meeting, and reduces no-shows.",
+    description: "A personalized video sent after someone books. Builds trust, sets expectations, and reduces no-shows. Pairs with the email/SMS appointment confirmation sequence.",
     progress: 45,
     sections: [
       { id: "cv1", title: "Opening — Personal Welcome", status: "approved", duration: "0:00 – 0:30", content: "\"Hey [First Name], it's David Mitchell from Cornerstone Wealth Partners. I just saw that you booked a Retirement Readiness Review with me — and I wanted to take 60 seconds to personally thank you and tell you what to expect.\n\nThis isn't a sales call. This is a real conversation about your money, your goals, and whether there's a smarter path to get you there.\"", why: "Personal touch immediately after booking creates connection and reduces buyer's remorse. Using their first name and acknowledging the action they just took builds trust." },
       { id: "cv2", title: "What to Expect", status: "in_review", duration: "0:30 – 1:15", content: "\"Here's what we'll cover in our 30 to 45 minutes together:\n\nFirst, I'll ask you a few questions about where you are right now — your accounts, your timeline, your goals. Nothing complicated.\n\nThen I'll walk you through a quick analysis of your current tax exposure and Social Security timing. Most people are surprised by what they find.\n\nAnd at the end, I'll be honest with you — if I think I can help, I'll tell you how. If I don't think we're the right fit, I'll tell you that too. Either way, you'll leave with more clarity than you came in with.\"", why: "Removes uncertainty about what the meeting will be like. The 'I'll be honest' line builds credibility and lowers defenses." },
       { id: "cv3", title: "Quick Prep + Close", status: "generating", duration: "1:15 – 1:45", content: null, why: "Gives them one simple thing to prepare (rough account balances) so the meeting is more productive. Closes with warmth and anticipation." },
+      { id: "cv4", title: "Appointment Confirmation Email Sequence", status: "in_review", messages: 3, timeline: "Booking to Meeting", content: "\"EMAIL 1 — Immediately after booking:\nSubject: You're confirmed — here's how to prepare\n\nEMAIL 2 — 24 hours before:\nSubject: Quick reminder — we meet tomorrow\n\nEMAIL 3 — 1 hour before:\nSubject: See you in 1 hour\"", why: "Confirm, prepare, remind. Setting expectations reduces anxiety and increases show rates. Pairs with the confirmation video for maximum show-up rate." },
     ],
   },
 ];
@@ -109,10 +122,10 @@ const statusLabel: Record<Status, string> = {
 const statusColor: Record<Status, string> = {
   approved: "#50e3c2",
   in_review: "#f5a623",
-  generating: "#ededed",
-  not_started: "#555",
-  in_progress: "#ededed",
-  locked: "#555",
+  generating: "var(--app-text)",
+  not_started: "var(--app-text-dim)",
+  in_progress: "var(--app-text)",
+  locked: "var(--app-text-dim)",
 };
 
 // ── Loading Screen Steps ──
@@ -194,7 +207,7 @@ function LoadingScreen({ onComplete }: { onComplete: () => void }) {
                 className="cs-loading-step"
                 style={{
                   opacity: isDone ? 0.5 : isActive ? 1 : 0.25,
-                  color: isDone ? "#888" : isActive ? "#ededed" : "#555",
+                  color: isDone ? "var(--app-text-secondary)" : isActive ? "var(--app-text)" : "var(--app-text-dim)",
                 }}
               >
                 <div className="cs-step-indicator">
@@ -229,8 +242,10 @@ function LoadingScreen({ onComplete }: { onComplete: () => void }) {
 
 export default function ContentStudio() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [fadeIn, setFadeIn] = useState(false);
+  const { dark, toggleTheme } = useTheme();
+  const hasVisited = sessionStorage.getItem("cs-visited") === "1";
+  const [loading, setLoading] = useState(!hasVisited);
+  const [fadeIn, setFadeIn] = useState(hasVisited);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [editingSection, setEditingSection] = useState<Section | null>(null);
@@ -312,6 +327,7 @@ export default function ContentStudio() {
   }
 
   function handleLoadingComplete() {
+    sessionStorage.setItem("cs-visited", "1");
     setLoading(false);
     requestAnimationFrame(() => setFadeIn(true));
   }
@@ -336,8 +352,8 @@ export default function ContentStudio() {
         <div className="cs-chat-context">
           <div className="cs-dim-label">Editing</div>
           <div style={{ fontSize: 13, fontWeight: 600, marginTop: 6 }}>{editingSection.title}</div>
-          {editingSection.duration && <div style={{ fontSize: 11, color: "#555", marginTop: 2 }}>{editingSection.duration}</div>}
-          <div style={{ fontSize: 12, color: "#888", lineHeight: 1.5, marginTop: 8 }}>{editingSection.why}</div>
+          {editingSection.duration && <div style={{ fontSize: 11, color: "var(--app-text-dim)", marginTop: 2 }}>{editingSection.duration}</div>}
+          <div style={{ fontSize: 12, color: "var(--app-text-secondary)", lineHeight: 1.5, marginTop: 8 }}>{editingSection.why}</div>
         </div>
       );
     } else if (activeCategory && activeCat) {
@@ -348,13 +364,13 @@ export default function ContentStudio() {
             <>
               <div className="cs-dim-label">Selected Section</div>
               <div style={{ fontSize: 13, fontWeight: 600, marginTop: 6 }}>{sec.title}</div>
-              <div style={{ fontSize: 12, color: "#888", lineHeight: 1.5, marginTop: 6 }}>{sec.why}</div>
+              <div style={{ fontSize: 12, color: "var(--app-text-secondary)", lineHeight: 1.5, marginTop: 6 }}>{sec.why}</div>
             </>
           ) : (
             <>
               <div className="cs-dim-label">Category</div>
               <div style={{ fontSize: 13, fontWeight: 600, marginTop: 6 }}>{activeCat.label}</div>
-              <div style={{ fontSize: 12, color: "#888", lineHeight: 1.5, marginTop: 6 }}>{activeCat.description}</div>
+              <div style={{ fontSize: 12, color: "var(--app-text-secondary)", lineHeight: 1.5, marginTop: 6 }}>{activeCat.description}</div>
             </>
           )}
         </div>
@@ -436,6 +452,14 @@ export default function ContentStudio() {
             <div className="cs-sidebar-title">Content Studio</div>
             <div className="cs-sidebar-sub">Campaign assets</div>
           </div>
+          <button onClick={() => navigate("/amplify-os/webinar-builder")} style={{ marginLeft: "auto", padding: "5px 12px", borderRadius: 6, border: "1px dashed var(--app-text-dim)", background: "transparent", color: "var(--app-text-secondary)", fontSize: 10, cursor: "pointer", transition: "all 0.15s", flexShrink: 0, whiteSpace: "nowrap" }} title="Skip to next section">Skip &rsaquo;</button>
+          <button onClick={toggleTheme} style={{ background: "transparent", border: "1px solid var(--app-border)", borderRadius: 8, padding: "8px 10px", cursor: "pointer", color: "var(--app-text-secondary)", display: "flex", alignItems: "center" }}>
+            {dark ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            )}
+          </button>
         </div>
 
         <div className="cs-sidebar-nav">
@@ -474,8 +498,8 @@ export default function ContentStudio() {
         </div>
 
         <div className="cs-sidebar-footer">
-          <div style={{ fontSize: 11, color: "#555", marginBottom: 4 }}>{campaignData.firm}</div>
-          <div style={{ fontSize: 10, color: "#555", opacity: 0.6 }}>{campaignData.icp}</div>
+          <div style={{ fontSize: 11, color: "var(--app-text-dim)", marginBottom: 4 }}>{campaignData.firm}</div>
+          <div style={{ fontSize: 10, color: "var(--app-text-dim)", opacity: 0.6 }}>{campaignData.icp}</div>
         </div>
       </div>
 
@@ -498,7 +522,7 @@ export default function ContentStudio() {
                     return (
                       <div key={cat.id} className="cs-overview-card" onClick={() => (setActiveCategory(cat.id), setExpandedSection(null))}>
                         <div className="cs-overview-card-bar">
-                          <div style={{ width: `${cat.progress}%`, height: "100%", background: "#ededed", transition: "width 0.5s" }} />
+                          <div style={{ width: `${cat.progress}%`, height: "100%", background: "var(--app-text)", transition: "width 0.5s" }} />
                         </div>
                         <div className="cs-overview-card-top">
                           <div className="cs-overview-card-order">{cat.order}</div>
@@ -512,6 +536,49 @@ export default function ContentStudio() {
                   })}
                 </div>
 
+                {/* Approve All & Continue */}
+                {(() => {
+                  const totalSections = categories.reduce((sum, c) => sum + c.sections.length, 0);
+                  const approvedSections = categories.reduce((sum, c) => sum + c.sections.filter(s => s.status === "approved").length, 0);
+                  return (
+                    <div className="cs-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px" }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--app-text)", marginBottom: 4 }}>
+                          {approvedSections === totalSections ? "All content approved" : `${approvedSections}/${totalSections} sections approved`}
+                        </div>
+                        <div style={{ fontSize: 12, color: "var(--app-text-muted)" }}>
+                          {approvedSections === totalSections
+                            ? "Your scripts are ready. Continue to build your webinar presentation."
+                            : "Approve all sections to continue to the Webinar Builder."}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => navigate("/amplify-os/webinar-builder")}
+                        disabled={approvedSections < totalSections}
+                        style={{
+                          padding: "10px 22px",
+                          borderRadius: 8,
+                          border: "none",
+                          background: approvedSections === totalSections ? "var(--app-text)" : "var(--app-border)",
+                          color: approvedSections === totalSections ? "var(--app-bg)" : "var(--app-text-dim)",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: approvedSections === totalSections ? "pointer" : "not-allowed",
+                          opacity: approvedSections === totalSections ? 1 : 0.6,
+                          transition: "all 0.15s",
+                          whiteSpace: "nowrap",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        Continue to Webinar Builder
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                      </button>
+                    </div>
+                  );
+                })()}
+
                 <div className="cs-card">
                   <div className="cs-card-title">Why this order?</div>
                   <div className="cs-order-flow">
@@ -521,13 +588,13 @@ export default function ContentStudio() {
                           <span className="cs-order-chip-num">{cat.order}</span>
                           <span>{cat.label.split("/")[0].split("(")[0].trim()}</span>
                         </div>
-                        {i < categories.length - 1 && <span style={{ color: "#555" }}>
+                        {i < categories.length - 1 && <span style={{ color: "var(--app-text-dim)" }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                         </span>}
                       </div>
                     ))}
                   </div>
-                  <div style={{ fontSize: 12, color: "#888", marginTop: 12, lineHeight: 1.6 }}>
+                  <div style={{ fontSize: 12, color: "var(--app-text-secondary)", marginTop: 12, lineHeight: 1.6 }}>
                     The webinar is the destination — ads drive traffic to it. Sequences nurture and convert leads after they register. The confirmation video reduces no-shows and builds trust before the first meeting. Each step builds context for the next.
                   </div>
                 </div>
@@ -604,7 +671,7 @@ export default function ContentStudio() {
                             </div>
                           ) : (
                             <div style={{ textAlign: "center", padding: "16px 0" }}>
-                              <div style={{ fontSize: 13, color: "#555", marginBottom: 10 }}>This section hasn't been generated yet.</div>
+                              <div style={{ fontSize: 13, color: "var(--app-text-dim)", marginBottom: 10 }}>This section hasn't been generated yet.</div>
                               <button className="cs-btn-secondary">Generate This Section</button>
                             </div>
                           )}
@@ -637,14 +704,14 @@ export default function ContentStudio() {
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
                     Back
                   </button>
-                  <span style={{ color: "#333" }}>·</span>
+                  <span style={{ color: "var(--app-text-faint)" }}>·</span>
                   <span style={{ fontSize: 14, fontWeight: 600 }}>{editingSection.title}</span>
                   {editingSection.duration && <span className="cs-type-tag">{editingSection.duration}</span>}
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button className="cs-btn-secondary" style={{ padding: "6px 14px", fontSize: 12 }}>Version History</button>
                   {editingSection.status !== "approved" && (
-                    <button className="cs-btn-primary" style={{ padding: "6px 14px", fontSize: 12, background: "#50e3c2", color: "#0a0a0a" }}>Approve Section</button>
+                    <button className="cs-btn-primary" style={{ padding: "6px 14px", fontSize: 12, background: "#50e3c2", color: "var(--app-bg)" }}>Approve Section</button>
                   )}
                 </div>
               </div>
@@ -678,8 +745,8 @@ export default function ContentStudio() {
 const loadingStyles = `
   .cs-root {
     min-height: 100vh;
-    background: #0a0a0a;
-    color: #ededed;
+    background: var(--app-bg);
+    color: var(--app-text);
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     display: flex;
@@ -697,15 +764,15 @@ const loadingStyles = `
   .cs-loading-logo {
     display: inline-flex; align-items: center; justify-content: center;
     width: 36px; height: 36px; border-radius: 8px;
-    background: #ededed; color: #0a0a0a;
+    background: var(--app-text); color: var(--app-bg);
     font-size: 15px; font-weight: 700; margin-bottom: 20px;
   }
 
   .cs-loading-title { font-size: 20px; font-weight: 600; margin: 0 0 8px; letter-spacing: -0.02em; }
-  .cs-loading-subtitle { font-size: 13px; color: #666; margin: 0; line-height: 1.5; }
+  .cs-loading-subtitle { font-size: 13px; color: var(--app-text-muted); margin: 0; line-height: 1.5; }
 
   .cs-loading-steps {
-    background: #111; border: 1px solid #1f1f1f; border-radius: 12px;
+    background: var(--app-surface); border: 1px solid var(--app-border); border-radius: 12px;
     padding: 18px 22px; margin-bottom: 24px;
   }
 
@@ -720,24 +787,24 @@ const loadingStyles = `
 
   .cs-step-spinner {
     width: 14px; height: 14px; border-radius: 50%;
-    border: 2px solid #1f1f1f; border-top-color: #ededed;
+    border: 2px solid var(--app-border); border-top-color: var(--app-text);
     animation: cs-spin 0.7s linear infinite;
   }
 
-  .cs-step-dot { width: 5px; height: 5px; border-radius: 50%; background: #333; }
+  .cs-step-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--app-text-faint); }
 
   .cs-loading-progress-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
 
-  .cs-loading-track { flex: 1; height: 4px; border-radius: 2px; background: #1f1f1f; overflow: hidden; }
+  .cs-loading-track { flex: 1; height: 4px; border-radius: 2px; background: var(--app-border); overflow: hidden; }
 
   .cs-loading-fill {
-    height: 100%; border-radius: 2px; background: #ededed;
+    height: 100%; border-radius: 2px; background: var(--app-text);
     transition: width 0.15s ease;
   }
 
-  .cs-loading-pct { font-size: 12px; font-weight: 600; color: #888; min-width: 32px; text-align: right; }
+  .cs-loading-pct { font-size: 12px; font-weight: 600; color: var(--app-text-secondary); min-width: 32px; text-align: right; }
 
-  .cs-loading-campaign { text-align: center; font-size: 11px; color: #555; }
+  .cs-loading-campaign { text-align: center; font-size: 11px; color: var(--app-text-dim); }
 
   @keyframes cs-fadeUp {
     from { opacity: 0; transform: translateY(16px); }
@@ -752,7 +819,7 @@ const loadingStyles = `
 const studioStyles = `
   .cs-root {
     height: 100vh; display: flex;
-    background: #0a0a0a; color: #ededed;
+    background: var(--app-bg); color: var(--app-text);
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow: hidden;
@@ -760,222 +827,222 @@ const studioStyles = `
 
   /* ── Sidebar ── */
   .cs-sidebar {
-    width: 240px; border-right: 1px solid #1f1f1f; background: #111;
+    width: 240px; border-right: 1px solid var(--app-border); background: var(--app-surface);
     display: flex; flex-direction: column; flex-shrink: 0;
   }
   .cs-sidebar-header {
-    padding: 16px; border-bottom: 1px solid #1f1f1f;
+    padding: 16px; border-bottom: 1px solid var(--app-border);
     display: flex; align-items: center; gap: 10px;
   }
   .cs-back-arrow {
-    width: 28px; height: 28px; border-radius: 6px; border: 1px solid #1f1f1f;
-    background: transparent; color: #888; cursor: pointer;
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--app-border);
+    background: transparent; color: var(--app-text-secondary); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     transition: all 0.15s;
   }
-  .cs-back-arrow:hover { border-color: #2e2e2e; color: #ededed; }
+  .cs-back-arrow:hover { border-color: var(--app-border-hover); color: var(--app-text); }
   .cs-sidebar-title { font-size: 14px; font-weight: 600; }
-  .cs-sidebar-sub { font-size: 11px; color: #555; }
+  .cs-sidebar-sub { font-size: 11px; color: var(--app-text-dim); }
   .cs-sidebar-nav { padding: 12px 8px; flex: 1; overflow-y: auto; }
   .cs-sidebar-label {
-    padding: 4px 8px; font-size: 10px; color: #555;
+    padding: 4px 8px; font-size: 10px; color: var(--app-text-dim);
     text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; margin-bottom: 6px;
   }
 
   .cs-nav-btn {
     display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px;
     margin-bottom: 2px; border-radius: 8px; border: none; text-align: left;
-    cursor: pointer; background: transparent; color: #ededed; transition: all 0.15s;
+    cursor: pointer; background: transparent; color: var(--app-text); transition: all 0.15s;
   }
-  .cs-nav-btn:hover { background: #1a1a1a; }
-  .cs-nav-btn--active { background: #1a1a1a; }
+  .cs-nav-btn:hover { background: var(--app-border-subtle); }
+  .cs-nav-btn--active { background: var(--app-border-subtle); }
 
   .cs-nav-order {
-    width: 24px; height: 24px; border-radius: 6px; background: #1f1f1f;
+    width: 24px; height: 24px; border-radius: 6px; background: var(--app-border);
     display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700; color: #888; flex-shrink: 0;
+    font-size: 11px; font-weight: 700; color: var(--app-text-secondary); flex-shrink: 0;
   }
-  .cs-nav-btn--active .cs-nav-order { background: #ededed; color: #0a0a0a; }
+  .cs-nav-btn--active .cs-nav-order { background: var(--app-text); color: var(--app-bg); }
 
   .cs-nav-info { flex: 1; min-width: 0; }
-  .cs-nav-name { font-size: 13px; font-weight: 500; color: #888; margin-bottom: 3px; }
-  .cs-nav-btn--active .cs-nav-name { color: #ededed; font-weight: 600; }
+  .cs-nav-name { font-size: 13px; font-weight: 500; color: var(--app-text-secondary); margin-bottom: 3px; }
+  .cs-nav-btn--active .cs-nav-name { color: var(--app-text); font-weight: 600; }
 
   .cs-nav-meta { display: flex; align-items: center; gap: 6px; font-size: 10px; }
-  .cs-nav-track { width: 48px; height: 3px; border-radius: 2px; background: #1f1f1f; }
-  .cs-nav-fill { height: 100%; border-radius: 2px; background: #ededed; transition: width 0.3s; }
+  .cs-nav-track { width: 48px; height: 3px; border-radius: 2px; background: var(--app-border); }
+  .cs-nav-fill { height: 100%; border-radius: 2px; background: var(--app-text); transition: width 0.3s; }
 
   .cs-sidebar-other-item {
-    padding: 8px 12px; font-size: 13px; color: #555; border-radius: 6px; cursor: pointer;
+    padding: 8px 12px; font-size: 13px; color: var(--app-text-dim); border-radius: 6px; cursor: pointer;
   }
-  .cs-sidebar-other-item:hover { color: #888; }
+  .cs-sidebar-other-item:hover { color: var(--app-text-secondary); }
 
-  .cs-sidebar-footer { padding: 12px 16px; border-top: 1px solid #1f1f1f; }
+  .cs-sidebar-footer { padding: 12px 16px; border-top: 1px solid var(--app-border); }
 
   /* ── Main ── */
   .cs-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-  .cs-scroll-area { overflow-y: auto; padding: 32px; }
-  .cs-content-max { max-width: 900px; margin: 0 auto; animation: cs-fadeIn 0.3s ease; }
-  .cs-section-max { max-width: 700px; margin: 0 auto; animation: cs-fadeIn 0.3s ease; }
+  .cs-scroll-area { overflow-y: auto; padding: 40px 44px; }
+  .cs-content-max { max-width: 960px; margin: 0 auto; animation: cs-fadeIn 0.3s ease; }
+  .cs-section-max { max-width: 760px; margin: 0 auto; animation: cs-fadeIn 0.3s ease; }
   .cs-split { flex: 1; display: flex; overflow: hidden; }
 
-  .cs-page-title { font-size: 22px; font-weight: 600; margin: 0 0 6px; letter-spacing: -0.02em; }
-  .cs-page-sub { font-size: 13px; color: #666; margin: 0; }
+  .cs-page-title { font-size: 26px; font-weight: 600; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .cs-page-sub { font-size: 14px; color: var(--app-text-muted); margin: 0; }
 
   /* ── Overview cards ── */
-  .cs-overview-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 28px; }
+  .cs-overview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
   .cs-overview-card {
-    background: #111; border: 1px solid #1f1f1f; border-radius: 12px;
-    padding: 20px; cursor: pointer; transition: border-color 0.15s;
+    background: var(--app-surface); border: 1px solid var(--app-border); border-radius: 14px;
+    padding: 28px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
     position: relative; overflow: hidden;
   }
-  .cs-overview-card:hover { border-color: #2e2e2e; }
-  .cs-overview-card-bar { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: #1f1f1f; }
-  .cs-overview-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .cs-overview-card:hover { border-color: var(--app-border-hover); box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .cs-overview-card-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--app-border); }
+  .cs-overview-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
   .cs-overview-card-order {
-    width: 32px; height: 32px; border-radius: 8px; background: #1a1a1a;
+    width: 38px; height: 38px; border-radius: 10px; background: var(--app-border-subtle);
     display: flex; align-items: center; justify-content: center;
-    font-size: 14px; font-weight: 700; color: #ededed;
+    font-size: 16px; font-weight: 700; color: var(--app-text);
   }
-  .cs-overview-card-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
-  .cs-overview-card-desc { font-size: 12px; color: #888; line-height: 1.5; margin-bottom: 12px; }
-  .cs-overview-card-meta { font-size: 11px; color: #555; }
+  .cs-overview-card-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+  .cs-overview-card-desc { font-size: 13px; color: var(--app-text-secondary); line-height: 1.6; margin-bottom: 16px; }
+  .cs-overview-card-meta { font-size: 12px; color: var(--app-text-dim); }
 
-  .cs-tag { font-size: 10px; font-weight: 600; }
+  .cs-tag { font-size: 11px; font-weight: 600; }
 
   /* ── Card ── */
   .cs-card {
-    background: #111; border: 1px solid #1f1f1f; border-radius: 12px;
-    padding: 24px; transition: border-color 0.15s;
+    background: var(--app-surface); border: 1px solid var(--app-border); border-radius: 14px;
+    padding: 28px; transition: border-color 0.15s;
   }
-  .cs-card:hover { border-color: #2e2e2e; }
-  .cs-card-title { font-size: 14px; font-weight: 600; margin: 0 0 12px; }
+  .cs-card:hover { border-color: var(--app-border-hover); }
+  .cs-card-title { font-size: 15px; font-weight: 600; margin: 0 0 14px; }
 
   .cs-order-flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .cs-order-chip {
     display: flex; align-items: center; gap: 8px; padding: 6px 14px;
-    border-radius: 8px; border: 1px solid #1f1f1f; background: #1a1a1a;
-    font-size: 12px; color: #ededed; font-weight: 500;
+    border-radius: 8px; border: 1px solid var(--app-border); background: var(--app-border-subtle);
+    font-size: 12px; color: var(--app-text); font-weight: 500;
   }
   .cs-order-chip-num {
-    width: 18px; height: 18px; border-radius: 4px; background: #2e2e2e;
+    width: 18px; height: 18px; border-radius: 4px; background: var(--app-border-hover);
     display: flex; align-items: center; justify-content: center;
     font-size: 10px; font-weight: 700;
   }
 
   /* ── Dim label ── */
   .cs-dim-label {
-    font-size: 11px; color: #555; text-transform: uppercase;
+    font-size: 11px; color: var(--app-text-dim); text-transform: uppercase;
     letter-spacing: 0.04em; font-weight: 500;
   }
 
   /* ── Buttons ── */
   .cs-text-btn {
-    background: transparent; border: none; color: #888; cursor: pointer;
+    background: transparent; border: none; color: var(--app-text-secondary); cursor: pointer;
     font-size: 13px; padding: 0; display: inline-flex; align-items: center; gap: 5px;
     transition: color 0.15s;
   }
-  .cs-text-btn:hover { color: #ededed; }
+  .cs-text-btn:hover { color: var(--app-text); }
 
   .cs-btn-primary {
     padding: 8px 20px; border-radius: 8px; border: none;
-    background: #ededed; color: #0a0a0a; font-size: 13px; font-weight: 600;
+    background: var(--app-text); color: var(--app-bg); font-size: 13px; font-weight: 600;
     cursor: pointer; transition: background 0.15s;
   }
   .cs-btn-primary:hover { background: #d4d4d4; }
 
   .cs-btn-secondary {
-    padding: 8px 16px; border-radius: 8px; border: 1px solid #2e2e2e;
-    background: transparent; color: #888; font-size: 13px; font-weight: 500;
+    padding: 8px 16px; border-radius: 8px; border: 1px solid var(--app-border-hover);
+    background: transparent; color: var(--app-text-secondary); font-size: 13px; font-weight: 500;
     cursor: pointer; transition: all 0.15s;
   }
-  .cs-btn-secondary:hover { border-color: #454545; color: #ededed; }
+  .cs-btn-secondary:hover { border-color: var(--app-border-hover); color: var(--app-text); }
 
   /* ── Section heading ── */
-  .cs-section-heading { font-size: 22px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.02em; }
-  .cs-section-desc { font-size: 13px; color: #666; line-height: 1.6; margin: 0 0 24px; }
+  .cs-section-heading { font-size: 24px; font-weight: 600; margin: 0 0 6px; letter-spacing: -0.02em; }
+  .cs-section-desc { font-size: 14px; color: var(--app-text-muted); line-height: 1.6; margin: 0 0 28px; }
 
   /* ── Progress ── */
   .cs-progress-row {
-    display: flex; align-items: center; gap: 12px; margin-bottom: 28px;
-    padding: 12px 16px; background: #111; border-radius: 10px; border: 1px solid #1f1f1f;
+    display: flex; align-items: center; gap: 14px; margin-bottom: 32px;
+    padding: 14px 20px; background: var(--app-surface); border-radius: 12px; border: 1px solid var(--app-border);
   }
-  .cs-progress-track { flex: 1; height: 4px; border-radius: 2px; background: #1f1f1f; }
-  .cs-progress-fill { height: 100%; border-radius: 2px; background: #ededed; transition: width 0.5s; }
-  .cs-progress-label { font-size: 12px; color: #888; flex-shrink: 0; }
+  .cs-progress-track { flex: 1; height: 5px; border-radius: 3px; background: var(--app-border); }
+  .cs-progress-fill { height: 100%; border-radius: 3px; background: var(--app-text); transition: width 0.5s; }
+  .cs-progress-label { font-size: 13px; color: var(--app-text-secondary); flex-shrink: 0; }
 
   /* ── Expandable sections ── */
   .cs-expandable {
-    background: #111; border: 1px solid #1f1f1f; border-radius: 12px;
+    background: var(--app-surface); border: 1px solid var(--app-border); border-radius: 14px;
     overflow: hidden; transition: border-color 0.15s;
   }
-  .cs-expandable:hover { border-color: #2e2e2e; }
-  .cs-expandable--open { border-color: #2e2e2e; }
+  .cs-expandable:hover { border-color: var(--app-border-hover); }
+  .cs-expandable--open { border-color: var(--app-border-hover); }
 
   .cs-expand-header {
-    padding: 14px 18px; display: flex; align-items: center; gap: 14px; cursor: pointer;
+    padding: 18px 22px; display: flex; align-items: center; gap: 16px; cursor: pointer;
   }
   .cs-rank {
-    width: 32px; height: 32px; border-radius: 8px; background: #1a1a1a;
+    width: 36px; height: 36px; border-radius: 9px; background: var(--app-border-subtle);
     display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 700; color: #888; flex-shrink: 0;
+    font-size: 14px; font-weight: 700; color: var(--app-text-secondary); flex-shrink: 0;
   }
-  .cs-expand-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
-  .cs-expand-meta { display: flex; gap: 8px; align-items: center; font-size: 11px; color: #555; }
+  .cs-expand-title { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
+  .cs-expand-meta { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--app-text-dim); }
   .cs-type-tag {
     font-size: 10px; padding: 2px 8px; border-radius: 6px;
-    border: 1px solid #1f1f1f; color: #555; background: #0a0a0a;
+    border: 1px solid var(--app-border); color: var(--app-text-dim); background: var(--app-bg);
   }
-  .cs-chevron { color: #555; transition: transform 0.15s; flex-shrink: 0; display: flex; }
+  .cs-chevron { color: var(--app-text-dim); transition: transform 0.15s; flex-shrink: 0; display: flex; }
   .cs-chevron--open { transform: rotate(180deg); }
 
-  .cs-expand-body { padding: 0 18px 18px; border-top: 1px solid #1a1a1a; padding-top: 16px; }
+  .cs-expand-body { padding: 0 22px 22px; border-top: 1px solid var(--app-border-subtle); padding-top: 18px; }
 
   .cs-preview {
-    font-size: 13px; color: #ededed; line-height: 1.8; white-space: pre-wrap;
-    max-height: 180px; overflow: hidden; position: relative;
+    font-size: 14px; color: var(--app-text); line-height: 1.8; white-space: pre-wrap;
+    max-height: 200px; overflow: hidden; position: relative;
   }
   .cs-preview-fade {
     position: absolute; bottom: 0; left: 0; right: 0; height: 60px;
-    background: linear-gradient(transparent, #111);
+    background: linear-gradient(transparent, var(--app-surface));
   }
 
   .cs-generating-row {
     display: flex; align-items: center; gap: 10px; padding: 12px 0;
-    font-size: 13px; color: #888;
+    font-size: 13px; color: var(--app-text-secondary);
   }
   .cs-spinner {
-    width: 16px; height: 16px; border: 2px solid #1f1f1f; border-top-color: #ededed;
+    width: 16px; height: 16px; border: 2px solid var(--app-border); border-top-color: var(--app-text);
     border-radius: 50%; animation: cs-spin 0.8s linear infinite;
   }
 
   /* ── Editor ── */
   .cs-editor-header {
-    padding: 12px 24px; border-bottom: 1px solid #1f1f1f;
+    padding: 12px 24px; border-bottom: 1px solid var(--app-border);
     display: flex; align-items: center; justify-content: space-between;
   }
   .cs-editor-cat-label {
-    font-size: 11px; font-weight: 600; color: #555; text-transform: uppercase;
+    font-size: 11px; font-weight: 600; color: var(--app-text-dim); text-transform: uppercase;
     letter-spacing: 0.04em; margin-bottom: 16px;
   }
   .cs-editable {
-    font-size: 15px; line-height: 2; color: #ededed; outline: none;
+    font-size: 16px; line-height: 2; color: var(--app-text); outline: none;
     white-space: pre-wrap; min-height: 300px; padding: 4px 0;
   }
   .cs-editable:focus { outline: none; }
 
   /* ── Chat Sidebar ── */
   .cs-chat {
-    width: 380px; flex-shrink: 0; border-left: 1px solid #1f1f1f;
-    display: flex; flex-direction: column; background: #0a0a0a;
+    width: 380px; flex-shrink: 0; border-left: 1px solid var(--app-border);
+    display: flex; flex-direction: column; background: var(--app-bg);
   }
   .cs-chat-header {
-    padding: 16px 20px; border-bottom: 1px solid #1f1f1f; flex-shrink: 0;
+    padding: 16px 20px; border-bottom: 1px solid var(--app-border); flex-shrink: 0;
     display: flex; align-items: center; gap: 10px;
   }
   .cs-chat-avatar {
     width: 28px; height: 28px; border-radius: 50%;
-    background: #ededed; color: #0a0a0a;
+    background: var(--app-text); color: var(--app-bg);
     display: flex; align-items: center; justify-content: center;
     font-size: 12px; font-weight: 700; flex-shrink: 0;
   }
@@ -988,10 +1055,10 @@ const studioStyles = `
   }
   .cs-chat-messages::-webkit-scrollbar { width: 4px; }
   .cs-chat-messages::-webkit-scrollbar-track { background: transparent; }
-  .cs-chat-messages::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 2px; }
+  .cs-chat-messages::-webkit-scrollbar-thumb { background: var(--app-border-subtle); border-radius: 2px; }
 
   .cs-chat-context {
-    padding: 14px 16px; background: #111; border: 1px solid #1f1f1f;
+    padding: 14px 16px; background: var(--app-surface); border: 1px solid var(--app-border);
     border-radius: 10px; margin-bottom: 8px;
   }
 
@@ -1004,7 +1071,7 @@ const studioStyles = `
 
   .cs-chat-msg-avatar {
     width: 24px; height: 24px; border-radius: 50%;
-    background: #ededed; color: #0a0a0a;
+    background: var(--app-text); color: var(--app-bg);
     display: flex; align-items: center; justify-content: center;
     font-size: 10px; font-weight: 700; flex-shrink: 0; margin-top: 2px;
   }
@@ -1014,11 +1081,11 @@ const studioStyles = `
     border-radius: 14px; padding: 10px 14px;
   }
   .cs-chat-bubble--ai {
-    background: #1a1a1a; color: #ededed;
-    border: 1px solid #1f1f1f; border-radius: 14px 14px 14px 4px;
+    background: var(--app-border-subtle); color: var(--app-text);
+    border: 1px solid var(--app-border); border-radius: 14px 14px 14px 4px;
   }
   .cs-chat-bubble--user {
-    background: #ededed; color: #0a0a0a;
+    background: var(--app-text); color: var(--app-bg);
     border-radius: 14px 14px 4px 14px;
   }
 
@@ -1027,37 +1094,37 @@ const studioStyles = `
   .cs-chat-prompt {
     display: block; width: 100%; text-align: left;
     padding: 8px 12px; margin-bottom: 4px; border-radius: 8px;
-    border: 1px solid #1f1f1f; background: transparent;
-    color: #888; font-size: 12px; cursor: pointer; transition: all 0.15s;
+    border: 1px solid var(--app-border); background: transparent;
+    color: var(--app-text-secondary); font-size: 12px; cursor: pointer; transition: all 0.15s;
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
   }
-  .cs-chat-prompt:hover { border-color: #2e2e2e; color: #ededed; background: #111; }
+  .cs-chat-prompt:hover { border-color: var(--app-border-hover); color: var(--app-text); background: var(--app-surface); }
 
   .cs-chat-input-wrap {
-    padding: 14px 16px; border-top: 1px solid #1f1f1f;
+    padding: 14px 16px; border-top: 1px solid var(--app-border);
     display: flex; align-items: center; gap: 8px; flex-shrink: 0;
   }
   .cs-chat-input {
     flex: 1; padding: 10px 14px; border-radius: 10px;
-    border: 1px solid #2e2e2e; background: #111; color: #ededed;
+    border: 1px solid var(--app-border-hover); background: var(--app-surface); color: var(--app-text);
     font-size: 13px; outline: none; transition: border-color 0.15s;
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
   }
-  .cs-chat-input:focus { border-color: #454545; }
-  .cs-chat-input::placeholder { color: #555; }
+  .cs-chat-input:focus { border-color: var(--app-border-hover); }
+  .cs-chat-input::placeholder { color: var(--app-text-dim); }
 
   .cs-chat-send {
     width: 34px; height: 34px; border-radius: 8px; border: none;
-    background: transparent; color: #555; cursor: pointer;
+    background: transparent; color: var(--app-text-dim); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     transition: all 0.15s; flex-shrink: 0;
   }
-  .cs-chat-send--active { background: #ededed; color: #0a0a0a; }
+  .cs-chat-send--active { background: var(--app-text); color: var(--app-bg); }
   .cs-chat-send--active:hover { background: #d4d4d4; }
 
   .cs-thinking-dots { display: flex; gap: 4px; align-items: center; }
   .cs-thinking-dots span {
-    width: 6px; height: 6px; border-radius: 50%; background: #555;
+    width: 6px; height: 6px; border-radius: 50%; background: var(--app-text-dim);
     animation: cs-dot-bounce 1.2s infinite;
   }
   .cs-thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
@@ -1071,7 +1138,7 @@ const studioStyles = `
   /* ── Scrollbar ── */
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #1f1f1f; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb { background: var(--app-border); border-radius: 3px; }
 
   @keyframes cs-fadeIn {
     from { opacity: 0; transform: translateY(6px); }
